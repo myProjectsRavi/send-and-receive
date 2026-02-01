@@ -3,7 +3,7 @@ items:
 - id: S1
   feature: F1
   title: Implement AES-GCM 256-bit Encryption
-  status: ready
+  status: done
   description: Create utility functions to encrypt text using a generated key and
     IV.
 - id: S2

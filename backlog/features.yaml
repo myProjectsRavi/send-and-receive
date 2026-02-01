@@ -3,10 +3,11 @@ items:
 - id: F1
   epic: E1
   title: Crypto Engine
-  status: review
+  status: done
   description: Wrapper for Web Crypto API to handle key generation, encryption, and
     decryption.
   pr_url: https://github.com/myProjectsRavi/send-and-receive/pull/10
+  review_verdict: PASS
 - id: F2
   epic: E2
   title: Secure Link Generation
