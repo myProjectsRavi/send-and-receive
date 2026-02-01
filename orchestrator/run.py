@@ -12,7 +12,7 @@ from typing import Any
 from .backlog import BacklogStore, extract_backlog_json
 from .config import Config
 from .git_utils import commit_all
-from .github_client import get_pr_info
+from .github_client import create_pr, find_pr_by_head, get_pr_info
 from .intake import prompt_from_event
 from .jules_client import JulesClient
 from .prompts import build_agent1_prompt, build_agent2_prompt, build_agent2_fix_prompt, build_agent3_prompt
@@ -21,6 +21,8 @@ from .utils import iter_strings, now_iso
 
 
 PR_URL_RE = re.compile(r"https://github.com/[^/]+/[^/]+/pull/\d+")
+BRANCH_REF_RE = re.compile(r"refs/heads/([A-Za-z0-9._/-]+)")
+FEATURE_BRANCH_RE = re.compile(r"(feature/[A-Za-z0-9._/-]+)")
 
 
 def log(message: str) -> None:
@@ -40,14 +42,56 @@ def collect_activity_text(client: JulesClient, session_name: str) -> str:
     return "\n".join(texts)
 
 
-def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config) -> str:
+def _extract_branch(text: str) -> str | None:
+    candidates: list[str] = []
+    for match in BRANCH_REF_RE.finditer(text):
+        candidates.append(match.group(1))
+    for match in FEATURE_BRANCH_RE.finditer(text):
+        candidates.append(match.group(1))
+    return candidates[-1] if candidates else None
+
+
+def _ensure_pr_exists(cfg: Config, branch: str, feature_id: str | None) -> str | None:
+    if not cfg.github_repository or not cfg.github_token:
+        return None
+    existing = find_pr_by_head(cfg.github_repository, branch, cfg.github_token, cfg.github_api_url)
+    if existing and existing.get("html_url"):
+        return str(existing["html_url"])
+    title = f"Feature {feature_id or branch}"
+    body = "Auto-created by orchestrator when Jules session completed without publishing a PR."
+    created = create_pr(
+        cfg.github_repository,
+        branch,
+        cfg.starting_branch,
+        title,
+        body,
+        cfg.github_token,
+        cfg.github_api_url,
+    )
+    return created.get("html_url") if created else None
+
+
+def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config, feature_id: str | None) -> str:
     deadline = time.time() + cfg.max_poll_minutes * 60
+    branch: str | None = None
     while time.time() < deadline:
         text = collect_activity_text(client, session_name)
         match = PR_URL_RE.search(text)
         if match:
             return match.group(0)
+        if not branch:
+            branch = _extract_branch(text)
+        session = client.get_session(session_name)
+        state = str(session.get("state") or session.get("status") or "").upper()
+        if state in {"FAILED", "CANCELLED"}:
+            raise RuntimeError(f"Agent2 session ended with state {state}")
+        if state == "COMPLETED":
+            break
         time.sleep(cfg.poll_seconds)
+    if branch:
+        pr_url = _ensure_pr_exists(cfg, branch, feature_id)
+        if pr_url:
+            return pr_url
     raise RuntimeError("Timed out waiting for PR url")
 
 
@@ -167,7 +211,7 @@ def run_agent2(cfg: Config, feature: dict[str, Any], stories: list[dict[str, Any
     log(f"Agent2 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    return poll_for_pr_url(client, session_name, cfg)
+    return poll_for_pr_url(client, session_name, cfg, feature.get("id"))
 
 
 def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str | None) -> None:
