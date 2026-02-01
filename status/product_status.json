@@ -3,11 +3,11 @@
   "status": "active",
   "last_run": "2026-02-01T12:03:26+00:00",
   "current_epic": null,
-  "current_feature": null,
+  "current_feature": "F1",
   "current_story": null,
   "epics_total": 3,
   "epics_done": 0,
   "features_total": 4,
   "features_done": 0,
-  "notes": "Agent1 backlog updated (replace)"
+  "notes": "Feature in progress"
 }

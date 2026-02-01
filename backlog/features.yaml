@@ -3,7 +3,7 @@ items:
 - id: F1
   epic: E1
   title: Encrypted URL Generator
-  status: ready
+  status: in_progress
   description: Convert user text into an encrypted URL fragment.
 - id: F2
   epic: E1
