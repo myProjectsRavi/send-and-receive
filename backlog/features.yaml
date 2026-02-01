@@ -18,8 +18,9 @@ items:
 - id: F4
   epic: E3
   title: Manual Handshake
-  status: in_progress
+  status: review
   description: Interface for generating and exchanging SDP offers/answers manually.
+  pr_url: https://github.com/myProjectsRavi/send-and-receive/pull/9
 - id: F5
   epic: E3
   title: Live Chat Interface
