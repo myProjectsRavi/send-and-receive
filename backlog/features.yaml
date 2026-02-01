@@ -16,7 +16,7 @@ items:
 - id: F3
   epic: E2
   title: Message Viewer
-  status: ready
+  status: in_progress
   description: Decodes URL fragment, attempts decryption, and clears history.
 - id: F4
   epic: E3
