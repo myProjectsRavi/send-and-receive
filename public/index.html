@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>GhostLink</h1>
+        <p>Secure, ephemeral messaging. Zero infrastructure.</p>
+
+        <div id="sender-ui">
+            <textarea id="message-input" placeholder="Type your secret message here..." maxlength="1000"></textarea>
+            <div class="controls">
+                <button id="encrypt-btn">Generate Secure Link</button>
+            </div>
+            <div id="result-area" class="hidden">
+                <p>Share this link (it contains the key and will burn on read):</p>
+                <div class="link-container">
+                    <input type="text" id="share-link" readonly>
+                    <button id="copy-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="receiver-ui" class="hidden">
+            <p>Message burned from history.</p>
+            <!-- Decryption UI would go here in future features -->
+        </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
