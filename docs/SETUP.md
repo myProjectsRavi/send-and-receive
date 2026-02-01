@@ -19,6 +19,11 @@
 4. Download status from **Artifacts** after each run:
    - `orchestrator-status-<run_id>` contains `status/*.json`.
 
+## Auto-merge (optional)
+- Enable by setting `ORCH_AUTO_MERGE=true` in the workflow env or `.env.local`.
+- Set `ORCH_MERGE_METHOD` to `squash`, `merge`, or `rebase`.
+- If branch protections block merging, the feature stays in `review` with a `merge_status` message.
+
 ## Local setup (laptop)
 1. Copy env template:
    ```

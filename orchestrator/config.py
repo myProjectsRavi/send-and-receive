@@ -23,6 +23,8 @@ class Config:
     agent1_mode: str
     run_max_minutes: int
     status_mode: str
+    auto_merge: bool
+    merge_method: str
     dry_run: bool
 
     @classmethod
@@ -53,6 +55,8 @@ class Config:
             agent1_mode=(os.getenv("ORCH_AGENT1_MODE") or "replace").lower(),
             run_max_minutes=int(os.getenv("ORCH_RUN_MAX_MINUTES", "27")),
             status_mode=(os.getenv("ORCH_STATUS_MODE") or "artifact").lower(),
+            auto_merge=(os.getenv("ORCH_AUTO_MERGE") or "false").lower() in ("1", "true", "yes"),
+            merge_method=(os.getenv("ORCH_MERGE_METHOD") or "squash").lower(),
             dry_run=dry_run,
         )
 

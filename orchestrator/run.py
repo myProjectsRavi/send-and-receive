@@ -12,7 +12,14 @@ from typing import Any
 from .backlog import BacklogStore, extract_backlog_json
 from .config import Config
 from .git_utils import commit_all, commit_paths
-from .github_client import create_pr, find_branch_by_session_id, find_pr_by_head, get_pr_info
+from .github_client import (
+    create_pr,
+    find_branch_by_session_id,
+    find_pr_by_head,
+    get_pr_info,
+    is_pr_merged,
+    merge_pr,
+)
 from .intake import prompt_from_event
 from .jules_client import JulesClient
 from .prompts import build_agent1_prompt, build_agent2_prompt, build_agent2_fix_prompt, build_agent3_prompt
@@ -217,6 +224,64 @@ def write_error(root: Path, error: Exception) -> None:
     (root / "status" / "last_error.json").write_text(json.dumps(payload, indent=2))
 
 
+def handle_passed_review(
+    cfg: Config,
+    store: BacklogStore,
+    root: Path,
+    feature_id: str,
+    pr_url: str,
+) -> bool:
+    store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict="PASS")
+    token = cfg.github_token
+    if token and is_pr_merged(pr_url, token, cfg.github_api_url):
+        store.update_feature_status(feature_id, "done")
+        store.update_story_status(feature_id, "done")
+        store.update_feature_fields(feature_id, review_verdict="PASS", merge_status="merged")
+        store.save_all()
+        write_status(root, store, feature_id, notes="Feature merged")
+        commit_backlog(cfg, f"backlog: merge feature {feature_id}")
+        return True
+    if cfg.auto_merge and token:
+        merge_result = merge_pr(pr_url, token, cfg.github_api_url, cfg.merge_method)
+        message = str(merge_result.get("message", "")).strip()
+        if merge_result.get("merged") or ("already" in message.lower() and "merge" in message.lower()):
+            store.update_feature_status(feature_id, "done")
+            store.update_story_status(feature_id, "done")
+            store.update_feature_fields(feature_id, review_verdict="PASS", merge_status="merged")
+            store.save_all()
+            write_status(root, store, feature_id, notes="Feature merged")
+            commit_backlog(cfg, f"backlog: merge feature {feature_id}")
+            return True
+        if not message:
+            message = "Auto-merge blocked; manual merge required."
+        store.update_feature_fields(
+            feature_id,
+            status="review",
+            pr_url=pr_url,
+            review_verdict="PASS",
+            merge_status=message,
+        )
+        store.save_all()
+        write_status(root, store, feature_id, notes=message)
+        commit_backlog(cfg, f"backlog: merge blocked {feature_id}")
+        return True
+
+    note = "Review passed; awaiting manual merge"
+    if not token:
+        note = "Review passed; manual merge required (no GITHUB_TOKEN)."
+    store.update_feature_fields(
+        feature_id,
+        status="review",
+        pr_url=pr_url,
+        review_verdict="PASS",
+        merge_status=note,
+    )
+    store.save_all()
+    write_status(root, store, feature_id, notes=note)
+    commit_backlog(cfg, f"backlog: awaiting merge {feature_id}")
+    return True
+
+
 def acceptance_for_stories(acceptance_items: list[dict[str, Any]], stories: list[dict[str, Any]]) -> list[dict[str, Any]]:
     story_ids = {story.get("id") for story in stories}
     return [item for item in acceptance_items if item.get("story") in story_ids]
@@ -378,6 +443,13 @@ def main() -> int:
         feature_id = feature.get("id")
         pr_url = feature.get("pr_url")
         log(f"Processing feature {feature_id}")
+        if (
+            feature.get("status") == "review"
+            and str(feature.get("review_verdict", "")).upper() == "PASS"
+            and pr_url
+        ):
+            handle_passed_review(cfg, store, root, feature_id, pr_url)
+            return 0
         if feature.get("status") != "review":
             store.update_feature_status(feature_id, "in_progress")
             store.save_all()
@@ -431,13 +503,7 @@ def main() -> int:
             write_status(root, store, feature_id, notes=f"Review verdict: {verdict}")
             commit_backlog(cfg, f"backlog: review verdict {feature_id}")
             return 0
-
-        store.update_feature_status(feature_id, "done")
-        store.update_story_status(feature_id, "done")
-        store.update_feature_fields(feature_id, review_verdict="PASS")
-        store.save_all()
-        write_status(root, store, feature_id, notes="Feature done")
-        commit_backlog(cfg, f"backlog: complete feature {feature_id}")
+        handle_passed_review(cfg, store, root, feature_id, pr_url)
         return 0
     except Exception as exc:
         write_error(root, exc)

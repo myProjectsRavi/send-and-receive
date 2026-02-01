@@ -177,3 +177,52 @@ def get_pr_info(pr_url: str, token: str, api_base: str) -> dict[str, Any]:
         "head_ref": data.get("head", {}).get("ref"),
         "state": data.get("state"),
     }
+
+
+def is_pr_merged(pr_url: str, token: str, api_base: str) -> bool:
+    owner, repo, number = parse_pr_url(pr_url)
+    url = f"{api_base.rstrip('/')}/repos/{owner}/{repo}/pulls/{number}/merge"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    resp = requests.get(url, headers=headers, timeout=30)
+    if resp.status_code == 204:
+        return True
+    if resp.status_code == 404:
+        return False
+    if resp.status_code >= 400:
+        raise RuntimeError(f"GitHub API error {resp.status_code}: {resp.text}")
+    return False
+
+
+def merge_pr(pr_url: str, token: str, api_base: str, merge_method: str | None = None) -> dict[str, Any]:
+    owner, repo, number = parse_pr_url(pr_url)
+    url = f"{api_base.rstrip('/')}/repos/{owner}/{repo}/pulls/{number}/merge"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    payload = {}
+    if merge_method:
+        payload["merge_method"] = merge_method
+    resp = requests.put(url, headers=headers, json=payload, timeout=30)
+    if resp.status_code in (200, 201):
+        data = resp.json()
+        return {
+            "merged": bool(data.get("merged", True)),
+            "message": data.get("message", ""),
+            "sha": data.get("sha"),
+        }
+    if resp.status_code in (404, 405, 409):
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {}
+        return {
+            "merged": False,
+            "message": data.get("message") or resp.text,
+        }
+    if resp.status_code >= 400:
+        raise RuntimeError(f"GitHub API error {resp.status_code}: {resp.text}")
+    return {"merged": False, "message": resp.text}

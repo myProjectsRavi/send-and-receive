@@ -51,6 +51,8 @@ jobs:
           ORCH_RUN_MAX_MINUTES: 27
           ORCH_MAX_ACTIVITY_PAGES: 20
           ORCH_STATUS_MODE: artifact
+          ORCH_AUTO_MERGE: true
+          ORCH_MERGE_METHOD: squash
           PRODUCT_PROMPT: ${{ inputs.product_prompt }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
