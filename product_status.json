@@ -1,0 +1,13 @@
+{
+  "product_id": "prod-001",
+  "status": "draft",
+  "last_run": "",
+  "current_epic": null,
+  "current_feature": null,
+  "current_story": null,
+  "epics_total": 0,
+  "epics_done": 0,
+  "features_total": 0,
+  "features_done": 0,
+  "notes": ""
+}

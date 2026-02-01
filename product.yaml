@@ -1,0 +1,15 @@
+version: 1
+product:
+  id: "prod-001"
+  name: "TBD"
+  owner: "product-owner"
+  vision: ""
+  constraints:
+    - "zero infra"
+    - "zero INR"
+    - "fire and forget"
+  rules: []
+  requirements: []
+  status: "draft"
+  created_at: ""
+  updated_at: ""

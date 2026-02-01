@@ -1,0 +1,52 @@
+name: Orchestrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      product_prompt:
+        description: "Product idea, constraints, requirements"
+        required: false
+        type: string
+  issue_comment:
+    types: [created]
+  schedule:
+    - cron: "0 * * * *"
+
+concurrency:
+  group: orchestrator-single
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  run:
+    if: ${{ github.event_name != 'issue_comment' || github.event.issue.pull_request == null }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Configure git
+        run: |
+          git config user.name "orchestrator-bot"
+          git config user.email "orchestrator-bot@users.noreply.github.com"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r orchestrator/requirements.txt
+      - name: Run orchestrator
+        env:
+          JULES_KEY_ARCH: ${{ secrets.JULES_KEY_ARCH }}
+          JULES_KEY_DEV: ${{ secrets.JULES_KEY_DEV }}
+          JULES_KEY_REVIEW: ${{ secrets.JULES_KEY_REVIEW }}
+          JULES_SOURCE: ${{ secrets.JULES_SOURCE }}
+          JULES_API_BASE: ${{ secrets.JULES_API_BASE }}
+          PRODUCT_PROMPT: ${{ inputs.product_prompt }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m orchestrator.run
