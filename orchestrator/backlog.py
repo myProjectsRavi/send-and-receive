@@ -39,17 +39,46 @@ class BacklogStore:
         self._write_yaml(BACKLOG_FILES["stories"], self.stories)
         self._write_yaml(BACKLOG_FILES["acceptance"], self.acceptance)
 
-    def apply_agent1_payload(self, payload: dict[str, Any]) -> None:
+    def apply_agent1_payload(self, payload: dict[str, Any], mode: str = "replace") -> None:
+        if mode == "replace":
+            if "product" in payload:
+                self.product = {"version": 1, "product": payload["product"]}
+            if "epics" in payload:
+                self.epics = {"version": 1, "items": payload["epics"]}
+            if "features" in payload:
+                self.features = {"version": 1, "items": payload["features"]}
+            if "stories" in payload:
+                self.stories = {"version": 1, "items": payload["stories"]}
+            if "acceptance" in payload:
+                self.acceptance = {"version": 1, "items": payload["acceptance"]}
+            return
+
+        # append mode
         if "product" in payload:
-            self.product = {"version": 1, "product": payload["product"]}
+            existing = self.product.get("product", {})
+            incoming = payload["product"] or {}
+            if not existing:
+                self.product = {"version": 1, "product": incoming}
+            else:
+                merged = dict(existing)
+                for key in ("constraints", "rules", "requirements"):
+                    merged[key] = _merge_unique_list(existing.get(key, []), incoming.get(key, []))
+                for key in ("name", "vision", "owner", "status"):
+                    if not merged.get(key) and incoming.get(key):
+                        merged[key] = incoming.get(key)
+                self.product = {"version": 1, "product": merged}
+
         if "epics" in payload:
-            self.epics = {"version": 1, "items": payload["epics"]}
+            self.epics = {"version": 1, "items": _merge_items(self.epics.get("items", []), payload["epics"])}
         if "features" in payload:
-            self.features = {"version": 1, "items": payload["features"]}
+            self.features = {"version": 1, "items": _merge_items(self.features.get("items", []), payload["features"])}
         if "stories" in payload:
-            self.stories = {"version": 1, "items": payload["stories"]}
+            self.stories = {"version": 1, "items": _merge_items(self.stories.get("items", []), payload["stories"])}
         if "acceptance" in payload:
-            self.acceptance = {"version": 1, "items": payload["acceptance"]}
+            self.acceptance = {
+                "version": 1,
+                "items": _merge_acceptance(self.acceptance.get("items", []), payload["acceptance"]),
+            }
 
     def next_ready_feature(self) -> dict[str, Any] | None:
         items = self.features.get("items", [])
@@ -103,3 +132,46 @@ def extract_backlog_json(text: str) -> dict[str, Any] | None:
         return json.loads(payload_raw)
     except json.JSONDecodeError:
         return None
+
+
+def _merge_unique_list(existing: list[Any], incoming: list[Any]) -> list[Any]:
+    merged = list(existing)
+    for item in incoming or []:
+        if item not in merged:
+            merged.append(item)
+    return merged
+
+
+def _merge_items(existing: list[dict[str, Any]], incoming: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged = list(existing)
+    existing_ids = {item.get("id") for item in existing if item.get("id")}
+    for item in incoming or []:
+        item_id = item.get("id")
+        if not item_id or item_id in existing_ids:
+            continue
+        merged.append(item)
+        existing_ids.add(item_id)
+    return merged
+
+
+def _merge_acceptance(existing: list[dict[str, Any]], incoming: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged = list(existing)
+    by_story: dict[str, dict[str, Any]] = {}
+    for item in merged:
+        story = item.get("story")
+        if story:
+            by_story[story] = item
+    for item in incoming or []:
+        story = item.get("story")
+        if not story:
+            continue
+        if story in by_story:
+            criteria = list(by_story[story].get("criteria", []))
+            for entry in item.get("criteria", []) or []:
+                if entry not in criteria:
+                    criteria.append(entry)
+            by_story[story]["criteria"] = criteria
+        else:
+            merged.append(item)
+            by_story[story] = item
+    return merged

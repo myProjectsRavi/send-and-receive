@@ -20,6 +20,7 @@ class Config:
     github_api_url: str
     github_server_url: str
     starting_branch: str
+    agent1_mode: str
     dry_run: bool
 
     @classmethod
@@ -47,6 +48,7 @@ class Config:
             github_api_url=os.getenv("GITHUB_API_URL", "https://api.github.com"),
             github_server_url=os.getenv("GITHUB_SERVER_URL", "https://github.com"),
             starting_branch=os.getenv("ORCH_STARTING_BRANCH") or "main",
+            agent1_mode=(os.getenv("ORCH_AGENT1_MODE") or "replace").lower(),
             dry_run=dry_run,
         )
 

@@ -125,8 +125,15 @@ def acceptance_for_stories(acceptance_items: list[dict[str, Any]], stories: list
     return [item for item in acceptance_items if item.get("story") in story_ids]
 
 
-def run_agent1(cfg: Config, store: BacklogStore) -> None:
-    prompt = build_agent1_prompt(cfg.require(cfg.product_prompt, "PRODUCT_PROMPT"))
+def run_agent1(cfg: Config, store: BacklogStore, mode: str) -> None:
+    existing = {
+        "product": store.product.get("product", {}),
+        "epics": store.epics.get("items", []),
+        "features": store.features.get("items", []),
+        "stories": store.stories.get("items", []),
+        "acceptance": store.acceptance.get("items", []),
+    }
+    prompt = build_agent1_prompt(cfg.require(cfg.product_prompt, "PRODUCT_PROMPT"), mode=mode, existing=existing)
     client = JulesClient(cfg.require(cfg.key_arch, "JULES_KEY_ARCH"), cfg.api_base)
     session = client.create_session(
         prompt=prompt,
@@ -141,7 +148,7 @@ def run_agent1(cfg: Config, store: BacklogStore) -> None:
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
     payload = poll_for_backlog(client, session_name, cfg)
-    store.apply_agent1_payload(payload)
+    store.apply_agent1_payload(payload, mode=mode)
     store.save_all()
 
 
@@ -210,18 +217,23 @@ def main() -> int:
     store.load()
 
     try:
+        agent1_mode = cfg.agent1_mode if cfg.agent1_mode in ("replace", "append") else "replace"
+
         if not cfg.product_prompt:
             event_path = os.getenv("GITHUB_EVENT_PATH")
             if event_path:
-                cfg.product_prompt = prompt_from_event(event_path)
+                prompt, mode = prompt_from_event(event_path)
+                cfg.product_prompt = prompt
+                if mode:
+                    agent1_mode = mode
 
         if cfg.product_prompt:
             log("Running Agent 1 (backlog)...")
             if cfg.dry_run:
                 log("Dry run: skipping Agent 1 API call")
             else:
-                run_agent1(cfg, store)
-                write_status(root, store, None, notes="Agent1 backlog updated")
+                run_agent1(cfg, store, agent1_mode)
+                write_status(root, store, None, notes=f"Agent1 backlog updated ({agent1_mode})")
                 commit_all("backlog: update from agent1")
 
         feature = store.next_ready_feature()

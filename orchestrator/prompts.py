@@ -3,7 +3,45 @@ from __future__ import annotations
 from typing import Any
 
 
-def build_agent1_prompt(product_prompt: str) -> str:
+def build_agent1_prompt(product_prompt: str, mode: str = "replace", existing: dict[str, Any] | None = None) -> str:
+    existing = existing or {}
+    if mode == "append":
+        return f"""
+You are Agent 1 (Architect + Business Analyst).
+
+Mode: APPEND. Do NOT modify or delete existing backlog items. Only add new items.
+
+Input from product owner:
+{product_prompt}
+
+Existing backlog (for reference):
+{_pretty(existing)}
+
+Rules:
+- Only add NEW epics, features, stories, and acceptance criteria.
+- Use NEW unique IDs that do not exist yet.
+- If you add a new feature, it must reference an epic ID.
+- If you add a new story, it must reference a feature ID.
+- If you have no new items for a section, return an empty array for that section.
+- You may add new items to product constraints/rules/requirements only.
+
+Return ONLY the JSON payload between the markers below. Do not include any extra text.
+
+BEGIN_BACKLOG_JSON
+{{
+  "product": {{
+    "constraints": [],
+    "rules": [],
+    "requirements": []
+  }},
+  "epics": [],
+  "features": [],
+  "stories": [],
+  "acceptance": []
+}}
+END_BACKLOG_JSON
+""".strip()
+
     return f"""
 You are Agent 1 (Architect + Business Analyst).
 
