@@ -32,3 +32,34 @@ export async function encrypt(text, key) {
     iv: iv
   };
 }
+
+export async function decrypt(ciphertext, key, iv) {
+  return window.crypto.subtle.decrypt(
+    {
+      name: ALGO_NAME,
+      iv: iv
+    },
+    key,
+    ciphertext
+  );
+}
+
+export async function exportKey(key) {
+  return window.crypto.subtle.exportKey(
+    "raw",
+    key
+  );
+}
+
+export async function importKey(rawKey) {
+  return window.crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    {
+      name: ALGO_NAME,
+      length: KEY_LENGTH
+    },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
