@@ -18,17 +18,27 @@ class JulesClient:
             "Content-Type": "application/json",
         }
 
-    def _request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+        retry_on_404: bool = False,
+        max_retries: int = 3,
+    ) -> dict[str, Any]:
         url = f"{self.api_base}{path}"
         data = json.dumps(payload) if payload is not None else None
-        for attempt in range(1, 4):
+        for attempt in range(1, max_retries + 1):
             resp = requests.request(method, url, headers=self._headers(), data=data, timeout=30)
             if resp.status_code < 400:
                 return resp.json()
-            if resp.status_code in (429, 500, 502, 503, 504) and attempt < 3:
+            if resp.status_code == 404 and retry_on_404 and attempt < max_retries:
                 time.sleep(2**attempt)
                 continue
-            raise RuntimeError(f"Jules API error {resp.status_code}: {resp.text}")
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < max_retries:
+                time.sleep(2**attempt)
+                continue
+            raise RuntimeError(f"Jules API error {resp.status_code} for {method} {url}: {resp.text}")
         raise RuntimeError("Jules API request failed after retries")
 
     def _normalize_session_name(self, session_name: str) -> str:
@@ -73,11 +83,11 @@ class JulesClient:
         return self._request("POST", "/sessions", body)
 
     def get_session(self, session_name: str) -> dict[str, Any]:
-        return self._request("GET", self._session_path(session_name))
+        return self._request("GET", self._session_path(session_name), retry_on_404=True, max_retries=6)
 
     def list_activities(self, session_name: str, page_size: int = 50) -> dict[str, Any]:
         path = f"{self._session_path(session_name)}/activities?pageSize={page_size}"
-        return self._request("GET", path)
+        return self._request("GET", path, retry_on_404=True, max_retries=6)
 
     def send_message(self, session_name: str, prompt: str) -> dict[str, Any]:
         body = {"prompt": prompt}
