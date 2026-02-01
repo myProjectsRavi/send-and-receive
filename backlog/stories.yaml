@@ -20,19 +20,19 @@ items:
 - id: S4
   feature: F4
   title: Generate SDP Offer
-  status: ready
+  status: done
   description: Create a WebRTC Data Channel offer and display it as base64/JSON for
     the user to copy.
 - id: S5
   feature: F4
   title: Generate SDP Answer
-  status: ready
+  status: done
   description: Allow a second user to paste an Offer, generate an Answer, and copy
     it.
 - id: S6
   feature: F4
   title: Finalize Connection
-  status: ready
+  status: done
   description: Allow the initiator to paste the Answer to establish the P2P link.
 - id: S7
   feature: F5
