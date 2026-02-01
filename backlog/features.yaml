@@ -11,7 +11,7 @@ items:
 - id: F2
   epic: E2
   title: Secure Link Generation
-  status: ready
+  status: in_progress
   description: Encodes encrypted payload and IV into a URL fragment.
 - id: F3
   epic: E2
