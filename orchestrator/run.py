@@ -137,6 +137,7 @@ def run_agent1(cfg: Config, store: BacklogStore) -> None:
         require_plan_approval=cfg.require_plan_approval,
     )
     session_name = session_name_from(session)
+    log(f"Agent1 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
     payload = poll_for_backlog(client, session_name, cfg)
@@ -156,6 +157,7 @@ def run_agent2(cfg: Config, feature: dict[str, Any], stories: list[dict[str, Any
         require_plan_approval=cfg.require_plan_approval,
     )
     session_name = session_name_from(session)
+    log(f"Agent2 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
     return poll_for_pr_url(client, session_name, cfg)
@@ -173,6 +175,7 @@ def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str
         require_plan_approval=cfg.require_plan_approval,
     )
     session_name = session_name_from(session)
+    log(f"Agent2 fix session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
     poll_for_session_completion(client, session_name, cfg)
@@ -190,6 +193,7 @@ def run_agent3(cfg: Config, pr_url: str, feature: dict[str, Any], stories: list[
         require_plan_approval=cfg.require_plan_approval,
     )
     session_name = session_name_from(session)
+    log(f"Agent3 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
     return poll_for_review(client, session_name, cfg)

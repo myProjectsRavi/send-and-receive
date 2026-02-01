@@ -31,11 +31,17 @@ class JulesClient:
             raise RuntimeError(f"Jules API error {resp.status_code}: {resp.text}")
         raise RuntimeError("Jules API request failed after retries")
 
+    def _normalize_session_name(self, session_name: str) -> str:
+        # Jules APIs expect resource names like "sessions/{id}".
+        # If we get a longer resource name, strip it down to the last "sessions/{id}" segment.
+        marker = "sessions/"
+        if marker in session_name:
+            session_id = session_name.rsplit(marker, 1)[-1]
+            return f"{marker}{session_id}"
+        return f"{marker}{session_name}"
+
     def _session_path(self, session_name: str) -> str:
-        # Accept ids, "sessions/..." names, or full resource names like "projects/.../sessions/..."
-        if "/" in session_name:
-            return f"/{session_name}"
-        return f"/sessions/{session_name}"
+        return f"/{self._normalize_session_name(session_name)}"
 
     def list_sources(self) -> dict[str, Any]:
         return self._request("GET", "/sources")
