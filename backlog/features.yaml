@@ -3,7 +3,7 @@ items:
 - id: F1
   epic: E1
   title: Crypto Engine
-  status: ready
+  status: in_progress
   description: Wrapper for Web Crypto API to handle AES-GCM and Key management.
 - id: F2
   epic: E2
