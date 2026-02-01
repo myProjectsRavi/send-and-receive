@@ -2,31 +2,24 @@ version: 1
 items:
 - id: S1
   feature: F1
-  title: Encrypt message and generate link
+  title: Implement AES-GCM Encryption
   status: ready
-  description: As a sender, I want to type a message and get a link containing the
-    encrypted data and key so I can share it securely.
+  description: Create a service that encrypts string data using a generated key and
+    IV.
 - id: S2
   feature: F2
-  title: Decrypt message from link
+  title: Generate Shareable URL
   status: ready
-  description: As a recipient, I want to open a GhostLink URL and see the decrypted
-    message without it ever being stored on a server.
+  description: Encode ciphertext, IV, and key into a URL fragment safe for sharing.
 - id: S3
   feature: F3
-  title: Generate Connection Offer
+  title: Burn-on-Read Decryption
   status: ready
-  description: As a chat initiator, I want to generate a WebRTC connection code (SDP)
-    to send to my peer.
+  description: Decrypt the message from the URL on load and immediately strip the
+    URL hash.
 - id: S4
-  feature: F3
-  title: Establish Connection with Answer
+  feature: F4
+  title: Generate SDP Offer
   status: ready
-  description: As a chat initiator, I want to paste the answer code from my peer to
-    finalize the connection.
-- id: S5
-  feature: F1
-  title: Burn on read (Simulated)
-  status: ready
-  description: As a sender, I want the link to be theoretically invalid after use
-    (by client-side logic attempting to clear it from history).
+  description: Create a WebRTC Data Channel offer and display it as base64/JSON for
+    the user to copy.

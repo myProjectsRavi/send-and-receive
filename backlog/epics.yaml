@@ -1,15 +1,14 @@
 version: 1
 items:
 - id: E1
-  title: Async Secret Sharing
+  title: Core Security & Cryptography
   status: planned
-  description: Send encrypted messages via URL links that contain the ciphertext and
-    key.
+  description: The foundation of client-side encryption and hygiene.
 - id: E2
+  title: Async Link Messaging
+  status: planned
+  description: Send one-off messages via generated magic links.
+- id: E3
   title: Real-time P2P Chat
   status: planned
-  description: Direct browser-to-browser chat using WebRTC with manual signaling.
-- id: E3
-  title: Security Foundation
-  status: planned
-  description: Core cryptographic implementations and threat mitigation.
+  description: Live conversation via WebRTC without signaling servers.

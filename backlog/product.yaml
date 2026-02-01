@@ -1,21 +1,26 @@
 version: 1
 product:
-  id: prod-001
+  id: prod-ghostlink
   name: GhostLink
   owner: product-owner
-  vision: A zero-infrastructure, client-side only web application for secure, ephemeral
-    messaging where data never touches a server.
+  vision: A zero-infrastructure, browser-based secure messaging tool that ensures
+    total privacy by storing data nowhere but the user's device.
   constraints:
   - No backend servers or databases
   - Static hosting only (Cloudflare Pages)
-  - Data stored in URL fragments or local storage only
-  - No user accounts or identity management
+  - Zero maintenance cost
+  - Data exists only in RAM or URL fragment
+  - No user accounts or login
   rules:
-  - Encryption keys must be generated client-side and never leave the device
-  - Message payloads for async sharing must fit within URL length limits
-  - Real-time chat must use manual SDP exchange (no signaling server)
+  - All encryption must happen client-side via Web Crypto API
+  - Keys must never be sent over the network (except inside URL fragment hash)
+  - WebRTC signaling must be manual (Copy/Paste SDP) to avoid signaling servers
+  - 'Impossible: Push notifications (requires APNS/FCM server)'
+  - 'Impossible: Offline message queuing (requires DB)'
+  - 'Impossible: User directory (requires DB)'
   requirements:
-  - Web Crypto API for AES-GCM and ECDH
+  - AES-GCM 256-bit encryption
+  - URL-based message transport (max ~2KB payload)
+  - Ephemeral UI - clear history on load
   - Responsive design for mobile/desktop
-  - Copy-to-clipboard functionality for links and SDP
   status: active

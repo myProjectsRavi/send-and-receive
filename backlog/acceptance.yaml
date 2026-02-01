@@ -2,23 +2,24 @@ version: 1
 items:
 - story: S1
   criteria:
-  - Message is encrypted using AES-GCM before URL generation.
-  - 'Key is included in the URL fragment (after #) so it is not sent to the server.'
-  - Link is copied to clipboard automatically.
-  - Max message size is enforced.
+  - Uses window.crypto.subtle
+  - 'Algorithm: AES-GCM with 256-bit key'
+  - Returns object containing { ciphertext, iv, key }
+  - Key is exportable for sharing
 - story: S2
   criteria:
-  - Application parses hash from URL.
-  - Decryption fails gracefully if key is missing or corrupted.
-  - Message content is displayed in a non-editable view.
-  - No network requests are made with the decrypted content.
+  - 'Constructs URL hash format: #iv|ciphertext|key'
+  - Uses Base64URL encoding to ensure link safety
+  - Handles messages up to URL length limits (approx 2KB safe)
 - story: S3
   criteria:
-  - Clicking 'Start Chat' generates a local WebRTC Offer.
-  - Offer string is compressed/encoded for easier copying.
-  - UI displays waiting state.
+  - 'Parses #iv|ciphertext|key from window.location.hash'
+  - Decrypts successfully and renders text
+  - Calls history.replaceState to remove hash immediately
+  - Shows error if integrity check fails
 - story: S4
   criteria:
-  - User can paste the Answer string from the peer.
-  - Connection state changes to 'Connected' upon success.
-  - Chat interface becomes active.
+  - Creates RTCPeerConnection with DataChannel
+  - Generates local description (Offer)
+  - Displays Offer string in a textarea for copying
+  - Includes ICE candidates in the blob (since no trickle ICE)

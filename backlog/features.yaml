@@ -2,22 +2,21 @@ version: 1
 items:
 - id: F1
   epic: E1
-  title: Encrypted URL Generator
-  status: in_progress
-  description: Convert user text into an encrypted URL fragment.
-- id: F2
-  epic: E1
-  title: Message Reader
+  title: Crypto Engine
   status: ready
-  description: Parse URL fragment, extract key/ciphertext, and display decrypted content.
+  description: Wrapper for Web Crypto API to handle AES-GCM and Key management.
+- id: F2
+  epic: E2
+  title: Message Composer
+  status: ready
+  description: UI and logic to encrypt text and generate shareable links.
 - id: F3
   epic: E2
-  title: Manual Handshake
+  title: Message Reader
   status: ready
-  description: Interface to exchange SDP offers and answers manually between peers.
+  description: Logic to parse URL hash, decrypt content, and display it.
 - id: F4
   epic: E3
-  title: Client-Side Crypto Engine
+  title: Manual Handshake
   status: ready
-  description: Wrapper for Web Crypto API to handle encryption, decryption, and key
-    generation.
+  description: Interface for generating and exchanging SDP offers/answers manually.
