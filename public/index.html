@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>GhostLink</h1>
+        <div id="status">Status: Disconnected</div>
+
+        <div id="handshake-ui">
+            <h2>Manual Handshake</h2>
+
+            <div class="role-selector">
+                <button id="mode-initiator">I want to start a chat</button>
+                <button id="mode-receiver">I have an offer</button>
+            </div>
+
+            <div id="initiator-flow" style="display:none;">
+                <h3>1. Generate Offer</h3>
+                <button id="start-btn">Generate Offer</button>
+                <div id="offer-display" style="display:none;">
+                    <p>Copy this offer and send it to your peer:</p>
+                    <textarea id="offer-area" readonly></textarea>
+                    <button id="copy-offer-btn">Copy Offer</button>
+                </div>
+
+                <div id="finalize-flow" style="display:none;">
+                    <h3>3. Finalize Connection</h3>
+                    <p>Paste the answer from your peer here:</p>
+                    <textarea id="answer-input" placeholder="Paste Answer Here"></textarea>
+                    <button id="connect-btn">Connect</button>
+                </div>
+            </div>
+
+            <div id="receiver-flow" style="display:none;">
+                <h3>2. Accept Offer</h3>
+                <p>Paste the offer from your peer here:</p>
+                <textarea id="offer-input" placeholder="Paste Offer Here"></textarea>
+                <button id="join-btn">Generate Answer</button>
+
+                <div id="answer-display" style="display:none;">
+                    <p>Copy this answer and send it back:</p>
+                    <textarea id="answer-area" readonly></textarea>
+                    <button id="copy-answer-btn">Copy Answer</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-ui" style="display:none;">
+            <h2>Secure Chat</h2>
+            <div id="messages"></div>
+            <input type="text" id="msg-input" placeholder="Type a message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
