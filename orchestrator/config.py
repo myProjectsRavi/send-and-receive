@@ -21,6 +21,7 @@ class Config:
     github_server_url: str
     starting_branch: str
     agent1_mode: str
+    run_max_minutes: int
     dry_run: bool
 
     @classmethod
@@ -49,6 +50,7 @@ class Config:
             github_server_url=os.getenv("GITHUB_SERVER_URL", "https://github.com"),
             starting_branch=os.getenv("ORCH_STARTING_BRANCH") or "main",
             agent1_mode=(os.getenv("ORCH_AGENT1_MODE") or "replace").lower(),
+            run_max_minutes=int(os.getenv("ORCH_RUN_MAX_MINUTES", "27")),
             dry_run=dry_run,
         )
 

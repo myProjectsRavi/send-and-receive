@@ -78,11 +78,23 @@ def _ensure_pr_exists(cfg: Config, branch: str, feature_id: str | None) -> str |
     return created.get("html_url") if created else None
 
 
-def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config, feature_id: str | None) -> str:
+def _out_of_time(run_deadline: float, buffer_seconds: int = 60) -> bool:
+    return time.time() + buffer_seconds >= run_deadline
+
+
+def poll_for_pr_url(
+    client: JulesClient,
+    session_name: str,
+    cfg: Config,
+    feature_id: str | None,
+    run_deadline: float,
+) -> str | None:
     deadline = time.time() + cfg.max_poll_minutes * 60
     branch: str | None = None
     session_id = session_name.split("/")[-1]
     while time.time() < deadline:
+        if _out_of_time(run_deadline):
+            break
         text = collect_activity_text(client, session_name)
         match = PR_URL_RE.search(text)
         if match:
@@ -102,23 +114,37 @@ def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config, feature
         pr_url = _ensure_pr_exists(cfg, branch, feature_id)
         if pr_url:
             return pr_url
-    raise RuntimeError("Timed out waiting for PR url")
+    return None
 
 
-def poll_for_backlog(client: JulesClient, session_name: str, cfg: Config) -> dict[str, Any]:
+def poll_for_backlog(
+    client: JulesClient,
+    session_name: str,
+    cfg: Config,
+    run_deadline: float,
+) -> dict[str, Any] | None:
     deadline = time.time() + cfg.max_poll_minutes * 60
     while time.time() < deadline:
+        if _out_of_time(run_deadline):
+            break
         text = collect_activity_text(client, session_name)
         payload = extract_backlog_json(text)
         if payload:
             return payload
         time.sleep(cfg.poll_seconds)
-    raise RuntimeError("Timed out waiting for backlog JSON")
+    return None
 
 
-def poll_for_review(client: JulesClient, session_name: str, cfg: Config) -> dict[str, Any]:
+def poll_for_review(
+    client: JulesClient,
+    session_name: str,
+    cfg: Config,
+    run_deadline: float,
+) -> dict[str, Any]:
     deadline = time.time() + cfg.max_poll_minutes * 60
     while time.time() < deadline:
+        if _out_of_time(run_deadline):
+            break
         text = collect_activity_text(client, session_name)
         payload = extract_review_json(text)
         if payload:
@@ -142,15 +168,17 @@ def poll_for_review(client: JulesClient, session_name: str, cfg: Config) -> dict
     }
 
 
-def poll_for_session_completion(client: JulesClient, session_name: str, cfg: Config) -> str:
+def poll_for_session_completion(client: JulesClient, session_name: str, cfg: Config, run_deadline: float) -> str:
     deadline = time.time() + cfg.max_poll_minutes * 60
     while time.time() < deadline:
+        if _out_of_time(run_deadline):
+            return "PENDING"
         session = client.get_session(session_name)
         state = str(session.get("state") or session.get("status") or "").upper()
         if state in {"COMPLETED", "FAILED", "CANCELLED"}:
             return state
         time.sleep(cfg.poll_seconds)
-    raise RuntimeError("Timed out waiting for session completion")
+    return "PENDING"
 
 
 def write_status(root: Path, store: BacklogStore, current_feature: str | None, notes: str = "") -> None:
@@ -194,7 +222,7 @@ def acceptance_for_stories(acceptance_items: list[dict[str, Any]], stories: list
     return [item for item in acceptance_items if item.get("story") in story_ids]
 
 
-def run_agent1(cfg: Config, store: BacklogStore, mode: str) -> None:
+def run_agent1(cfg: Config, store: BacklogStore, mode: str, run_deadline: float) -> bool:
     existing = {
         "product": store.product.get("product", {}),
         "epics": store.epics.get("items", []),
@@ -216,12 +244,21 @@ def run_agent1(cfg: Config, store: BacklogStore, mode: str) -> None:
     log(f"Agent1 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    payload = poll_for_backlog(client, session_name, cfg)
+    payload = poll_for_backlog(client, session_name, cfg, run_deadline)
+    if not payload:
+        return False
     store.apply_agent1_payload(payload, mode=mode)
     store.save_all()
+    return True
 
 
-def run_agent2(cfg: Config, feature: dict[str, Any], stories: list[dict[str, Any]], acceptance: list[dict[str, Any]]) -> str:
+def run_agent2(
+    cfg: Config,
+    feature: dict[str, Any],
+    stories: list[dict[str, Any]],
+    acceptance: list[dict[str, Any]],
+    run_deadline: float,
+) -> str | None:
     prompt = build_agent2_prompt(feature, stories, acceptance)
     client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
     session = client.create_session(
@@ -236,10 +273,10 @@ def run_agent2(cfg: Config, feature: dict[str, Any], stories: list[dict[str, Any
     log(f"Agent2 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    return poll_for_pr_url(client, session_name, cfg, feature.get("id"))
+    return poll_for_pr_url(client, session_name, cfg, feature.get("id"), run_deadline)
 
 
-def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str | None) -> None:
+def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str | None, run_deadline: float) -> None:
     prompt = build_agent2_fix_prompt(pr_url, review)
     client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
     session = client.create_session(
@@ -254,10 +291,18 @@ def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str
     log(f"Agent2 fix session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    poll_for_session_completion(client, session_name, cfg)
+    poll_for_session_completion(client, session_name, cfg, run_deadline)
 
 
-def run_agent3(cfg: Config, pr_url: str, feature: dict[str, Any], stories: list[dict[str, Any]], acceptance: list[dict[str, Any]], branch: str | None) -> dict[str, Any]:
+def run_agent3(
+    cfg: Config,
+    pr_url: str,
+    feature: dict[str, Any],
+    stories: list[dict[str, Any]],
+    acceptance: list[dict[str, Any]],
+    branch: str | None,
+    run_deadline: float,
+) -> dict[str, Any]:
     prompt = build_agent3_prompt(pr_url, feature, stories, acceptance)
     client = JulesClient(cfg.require(cfg.key_review, "JULES_KEY_REVIEW"), cfg.api_base)
     session = client.create_session(
@@ -272,7 +317,7 @@ def run_agent3(cfg: Config, pr_url: str, feature: dict[str, Any], stories: list[
     log(f"Agent3 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    return poll_for_review(client, session_name, cfg)
+    return poll_for_review(client, session_name, cfg, run_deadline)
 
 
 def main() -> int:
@@ -281,6 +326,7 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = Config.from_env(dry_run=args.dry_run)
+    run_deadline = time.time() + cfg.run_max_minutes * 60
     root = Path.cwd()
     store = BacklogStore(root)
     store.load()
@@ -301,11 +347,15 @@ def main() -> int:
             if cfg.dry_run:
                 log("Dry run: skipping Agent 1 API call")
             else:
-                run_agent1(cfg, store, agent1_mode)
+                ok = run_agent1(cfg, store, agent1_mode, run_deadline)
+                if not ok:
+                    write_status(root, store, None, notes="Agent1 backlog pending")
+                    commit_all("backlog: pending agent1")
+                    return 0
                 write_status(root, store, None, notes=f"Agent1 backlog updated ({agent1_mode})")
                 commit_all("backlog: update from agent1")
 
-        feature = store.next_ready_feature()
+        feature = store.next_review_feature() or store.next_ready_feature()
         if not feature:
             log("No ready features found")
             write_status(root, store, None, notes="No ready features")
@@ -313,11 +363,13 @@ def main() -> int:
             return 0
 
         feature_id = feature.get("id")
+        pr_url = feature.get("pr_url")
         log(f"Processing feature {feature_id}")
-        store.update_feature_status(feature_id, "in_progress")
-        store.save_all()
-        write_status(root, store, feature_id, notes="Feature in progress")
-        commit_all(f"backlog: start feature {feature_id}")
+        if feature.get("status") != "review":
+            store.update_feature_status(feature_id, "in_progress")
+            store.save_all()
+            write_status(root, store, feature_id, notes="Feature in progress")
+            commit_all(f"backlog: start feature {feature_id}")
 
         stories = store.get_stories_for_feature(feature_id)
         acceptance = acceptance_for_stories(store.acceptance.get("items", []), stories)
@@ -326,20 +378,29 @@ def main() -> int:
             log("Dry run: skipping Agent 2/3 API calls")
             return 0
 
-        pr_url = run_agent2(cfg, feature, stories, acceptance)
+        if not pr_url:
+            pr_url = run_agent2(cfg, feature, stories, acceptance, run_deadline)
+        if not pr_url:
+            log("PR not ready; leaving feature in progress.")
+            store.update_feature_fields(feature_id, status="in_progress")
+            store.save_all()
+            write_status(root, store, feature_id, notes="PR pending")
+            commit_all(f"backlog: pr pending {feature_id}")
+            return 0
+
         log(f"PR created: {pr_url}")
-        store.update_feature_status(feature_id, "review")
+        store.update_feature_fields(feature_id, status="review", pr_url=pr_url)
         store.save_all()
         write_status(root, store, feature_id, notes="Feature in review")
         commit_all(f"backlog: review feature {feature_id}")
 
         pr_info = get_pr_info(pr_url, cfg.require(cfg.github_token, "GITHUB_TOKEN"), cfg.github_api_url)
-        review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"))
+        review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
         verdict = str(review.get("verdict", "")).upper()
 
         if verdict == "PENDING":
             log("Review pending; no verdict found. Leaving feature in review state.")
-            store.update_feature_status(feature_id, "review")
+            store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict="PENDING")
             store.save_all()
             write_status(root, store, feature_id, notes="Review pending (no verdict)")
             commit_all(f"backlog: review pending {feature_id}")
@@ -347,15 +408,20 @@ def main() -> int:
 
         if verdict == "NEEDS_CHANGES":
             log("Reviewer requested changes")
-            run_agent2_fix(cfg, pr_url, review, pr_info.get("head_ref"))
-            review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"))
+            run_agent2_fix(cfg, pr_url, review, pr_info.get("head_ref"), run_deadline)
+            review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
             verdict = str(review.get("verdict", "")).upper()
 
         if verdict != "PASS":
-            raise RuntimeError("Review did not pass")
+            store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict=verdict)
+            store.save_all()
+            write_status(root, store, feature_id, notes=f"Review verdict: {verdict}")
+            commit_all(f"backlog: review verdict {feature_id}")
+            return 0
 
         store.update_feature_status(feature_id, "done")
         store.update_story_status(feature_id, "done")
+        store.update_feature_fields(feature_id, review_verdict="PASS")
         store.save_all()
         write_status(root, store, feature_id, notes="Feature done")
         commit_all(f"backlog: complete feature {feature_id}")

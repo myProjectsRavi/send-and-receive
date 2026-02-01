@@ -87,15 +87,27 @@ class BacklogStore:
                 return item
         return None
 
+    def next_review_feature(self) -> dict[str, Any] | None:
+        items = self.features.get("items", [])
+        for item in items:
+            if item.get("status") == "review" and item.get("pr_url"):
+                return item
+        return None
+
     def get_stories_for_feature(self, feature_id: str) -> list[dict[str, Any]]:
         items = self.stories.get("items", [])
         return [item for item in items if item.get("feature") == feature_id]
 
     def update_feature_status(self, feature_id: str, status: str) -> None:
+        self.update_feature_fields(feature_id, status=status)
+
+    def update_feature_fields(self, feature_id: str, **fields: Any) -> None:
         items = self.features.get("items", [])
         for item in items:
             if item.get("id") == feature_id:
-                item["status"] = status
+                for key, value in fields.items():
+                    if value is not None:
+                        item[key] = value
 
     def update_story_status(self, feature_id: str, status: str) -> None:
         items = self.stories.get("items", [])

@@ -48,6 +48,8 @@ jobs:
           JULES_API_BASE: ${{ secrets.JULES_API_BASE }}
           ORCH_MAX_POLL_MINUTES: 25
           ORCH_POLL_SECONDS: 12
+          ORCH_RUN_MAX_MINUTES: 27
+          ORCH_MAX_ACTIVITY_PAGES: 20
           PRODUCT_PROMPT: ${{ inputs.product_prompt }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
