@@ -126,12 +126,32 @@ def extract_backlog_json(text: str) -> dict[str, Any] | None:
     start = text.find("BEGIN_BACKLOG_JSON")
     end = text.find("END_BACKLOG_JSON")
     if start == -1 or end == -1 or end <= start:
-        return None
+        return _extract_from_any_json(text)
     payload_raw = text[start + len("BEGIN_BACKLOG_JSON"):end].strip()
     try:
         return json.loads(payload_raw)
     except json.JSONDecodeError:
-        return None
+        return _extract_from_any_json(text)
+
+
+def _extract_from_any_json(text: str) -> dict[str, Any] | None:
+    decoder = json.JSONDecoder()
+    required = {"product", "epics", "features", "stories", "acceptance"}
+    idx = 0
+    text_len = len(text)
+    while idx < text_len:
+        if text[idx] != "{":
+            idx += 1
+            continue
+        try:
+            obj, end = decoder.raw_decode(text[idx:])
+        except json.JSONDecodeError:
+            idx += 1
+            continue
+        if isinstance(obj, dict) and required.intersection(obj.keys()):
+            return obj
+        idx += max(end, 1)
+    return None
 
 
 def _merge_unique_list(existing: list[Any], incoming: list[Any]) -> list[Any]:
