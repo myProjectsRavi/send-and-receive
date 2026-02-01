@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink - Secure Message Composer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>GhostLink Composer</h1>
+        <textarea id="message-input" placeholder="Type your secret message here... (max 1000 chars)" maxlength="1000"></textarea>
+        <button id="generate-btn">Generate Secure Link</button>
+
+        <div id="result-area">
+            <p>Share this link (it will burn on read):</p>
+            <a id="share-link" href="#" target="_blank"></a>
+            <button id="copy-btn" style="margin-top: 10px; background-color: #28a745;">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
