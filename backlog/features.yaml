@@ -16,8 +16,9 @@ items:
 - id: F3
   epic: E2
   title: Message Viewer
-  status: in_progress
+  status: review
   description: Decodes URL fragment, attempts decryption, and clears history.
+  pr_url: https://github.com/myProjectsRavi/send-and-receive/pull/12
 - id: F4
   epic: E3
   title: Manual Handshake
