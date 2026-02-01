@@ -32,3 +32,10 @@ export async function encrypt(text, key) {
     iv: iv
   };
 }
+
+export async function exportKey(key) {
+  return window.crypto.subtle.exportKey(
+    'raw',
+    key
+  );
+}
