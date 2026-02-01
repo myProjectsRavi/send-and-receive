@@ -1,13 +1,13 @@
 {
   "product_id": "prod-ghostlink",
   "status": "active",
-  "last_run": "2026-02-01T14:46:53+00:00",
+  "last_run": "2026-02-01T15:18:56+00:00",
   "current_epic": null,
-  "current_feature": "F3",
+  "current_feature": null,
   "current_story": null,
-  "epics_total": 3,
+  "epics_total": 4,
   "epics_done": 0,
-  "features_total": 4,
+  "features_total": 6,
   "features_done": 1,
-  "notes": "Feature done"
+  "notes": "Agent1 backlog updated (append)"
 }

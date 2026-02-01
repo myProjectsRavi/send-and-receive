@@ -11,6 +11,7 @@ product:
   - Zero maintenance cost
   - Data exists only in RAM or URL fragment
   - No user accounts or login
+  - 1:1 Messaging only (Mesh/SFU logic too complex for serverless MVP)
   rules:
   - All encryption must happen client-side via Web Crypto API
   - Keys must never be sent over the network (except inside URL fragment hash)
@@ -18,9 +19,13 @@ product:
   - 'Impossible: Push notifications (requires APNS/FCM server)'
   - 'Impossible: Offline message queuing (requires DB)'
   - 'Impossible: User directory (requires DB)'
+  - No external scripts or CDNs permitted (Self-contained for security)
+  - File transfers limited by client RAM (No server-side buffering)
   requirements:
   - AES-GCM 256-bit encryption
   - URL-based message transport (max ~2KB payload)
   - Ephemeral UI - clear history on load
   - Responsive design for mobile/desktop
+  - Strict Content Security Policy (CSP) headers
+  - Sanitization of all rendered user content
   status: active

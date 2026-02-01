@@ -23,3 +23,27 @@ items:
   - Generates local description (Offer)
   - Displays Offer string in a textarea for copying
   - Includes ICE candidates in the blob (since no trickle ICE)
+- story: S5
+  criteria:
+  - Accepts SDP Offer string as input
+  - Sets Remote Description on local connection
+  - Generates Local Description (Answer)
+  - Displays Answer for copying
+- story: S6
+  criteria:
+  - Accepts SDP Answer string as input
+  - Sets Remote Description
+  - Waits for DataChannel 'open' event
+  - Transitions UI to Chat Mode upon success
+- story: S7
+  criteria:
+  - Input field sends text to DataChannel
+  - Incoming data appends to message log
+  - UI clears on page refresh (no local storage)
+  - Visual indicator for connection status
+- story: S8
+  criteria:
+  - 'Meta tag present: default-src ''self'''
+  - script-src 'self' (no unsafe-inline/eval)
+  - style-src 'self' (or 'unsafe-inline' if absolutely necessary for dynamic UI)
+  - 'img-src ''self'' data:'

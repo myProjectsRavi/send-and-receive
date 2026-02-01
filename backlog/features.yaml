@@ -20,3 +20,13 @@ items:
   title: Manual Handshake
   status: ready
   description: Interface for generating and exchanging SDP offers/answers manually.
+- id: F5
+  epic: E3
+  title: Live Chat Interface
+  status: planned
+  description: The UI and logic for exchanging messages over an open WebRTC DataChannel.
+- id: F6
+  epic: E4
+  title: Attack Surface Reduction
+  status: planned
+  description: Implementation of strict browser security policies.

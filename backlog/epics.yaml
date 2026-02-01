@@ -12,3 +12,7 @@ items:
   title: Real-time P2P Chat
   status: planned
   description: Live conversation via WebRTC without signaling servers.
+- id: E4
+  title: Security Hardening
+  status: planned
+  description: Measures to prevent XSS, MITM, and other client-side attacks.

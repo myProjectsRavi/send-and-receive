@@ -15,6 +15,14 @@
     {
       "id": "F4",
       "status": "ready"
+    },
+    {
+      "id": "F5",
+      "status": "planned"
+    },
+    {
+      "id": "F6",
+      "status": "planned"
     }
   ]
 }
