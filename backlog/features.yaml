@@ -18,7 +18,7 @@ items:
 - id: F4
   epic: E3
   title: Manual Handshake
-  status: ready
+  status: in_progress
   description: Interface for generating and exchanging SDP offers/answers manually.
 - id: F5
   epic: E3
