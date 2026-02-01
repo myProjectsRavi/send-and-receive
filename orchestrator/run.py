@@ -37,8 +37,15 @@ def session_name_from(resp: dict[str, Any]) -> str:
 
 
 def collect_activity_text(client: JulesClient, session_name: str) -> str:
-    activities = client.list_activities(session_name)
-    texts = list(iter_strings(activities))
+    page_token: str | None = None
+    texts: list[str] = []
+    max_pages = int(os.getenv("ORCH_MAX_ACTIVITY_PAGES", "10"))
+    for _ in range(max_pages):
+        activities = client.list_activities(session_name, page_token=page_token)
+        texts.extend(iter_strings(activities))
+        page_token = activities.get("nextPageToken")
+        if not page_token:
+            break
     return "\n".join(texts)
 
 
@@ -116,8 +123,23 @@ def poll_for_review(client: JulesClient, session_name: str, cfg: Config) -> dict
         payload = extract_review_json(text)
         if payload:
             return payload
+        session = client.get_session(session_name)
+        state = str(session.get("state") or session.get("status") or "").upper()
+        if state in {"FAILED", "CANCELLED"}:
+            raise RuntimeError(f"Agent3 session ended with state {state}")
+        if state == "COMPLETED":
+            # final attempt before exiting
+            payload = extract_review_json(text)
+            if payload:
+                return payload
+            break
         time.sleep(cfg.poll_seconds)
-    raise RuntimeError("Timed out waiting for review JSON")
+    return {
+        "verdict": "PENDING",
+        "blocking": [],
+        "non_blocking": [],
+        "notes": "Review JSON not found before timeout; manual check recommended.",
+    }
 
 
 def poll_for_session_completion(client: JulesClient, session_name: str, cfg: Config) -> str:
@@ -314,6 +336,14 @@ def main() -> int:
         pr_info = get_pr_info(pr_url, cfg.require(cfg.github_token, "GITHUB_TOKEN"), cfg.github_api_url)
         review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"))
         verdict = str(review.get("verdict", "")).upper()
+
+        if verdict == "PENDING":
+            log("Review pending; no verdict found. Leaving feature in review state.")
+            store.update_feature_status(feature_id, "review")
+            store.save_all()
+            write_status(root, store, feature_id, notes="Review pending (no verdict)")
+            commit_all(f"backlog: review pending {feature_id}")
+            return 0
 
         if verdict == "NEEDS_CHANGES":
             log("Reviewer requested changes")

@@ -85,8 +85,15 @@ class JulesClient:
     def get_session(self, session_name: str) -> dict[str, Any]:
         return self._request("GET", self._session_path(session_name), retry_on_404=True, max_retries=6)
 
-    def list_activities(self, session_name: str, page_size: int = 50) -> dict[str, Any]:
+    def list_activities(
+        self,
+        session_name: str,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         path = f"{self._session_path(session_name)}/activities?pageSize={page_size}"
+        if page_token:
+            path = f"{path}&pageToken={page_token}"
         return self._request("GET", path, retry_on_404=True, max_retries=6)
 
     def send_message(self, session_name: str, prompt: str) -> dict[str, Any]:
