@@ -14,7 +14,7 @@ items:
 - id: S3
   feature: F3
   title: Burn-on-Read Decryption
-  status: ready
+  status: done
   description: Decrypt the message from the URL on load and immediately strip the
     URL hash.
 - id: S4

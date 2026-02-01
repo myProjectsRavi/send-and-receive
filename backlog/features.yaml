@@ -13,7 +13,7 @@ items:
 - id: F3
   epic: E2
   title: Message Reader
-  status: review
+  status: done
   description: Logic to parse URL hash, decrypt content, and display it.
 - id: F4
   epic: E3
