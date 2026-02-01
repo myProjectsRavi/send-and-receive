@@ -12,7 +12,7 @@ from typing import Any
 from .backlog import BacklogStore, extract_backlog_json
 from .config import Config
 from .git_utils import commit_all
-from .github_client import create_pr, find_pr_by_head, get_pr_info
+from .github_client import create_pr, find_branch_by_session_id, find_pr_by_head, get_pr_info
 from .intake import prompt_from_event
 from .jules_client import JulesClient
 from .prompts import build_agent1_prompt, build_agent2_prompt, build_agent2_fix_prompt, build_agent3_prompt
@@ -74,6 +74,7 @@ def _ensure_pr_exists(cfg: Config, branch: str, feature_id: str | None) -> str |
 def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config, feature_id: str | None) -> str:
     deadline = time.time() + cfg.max_poll_minutes * 60
     branch: str | None = None
+    session_id = session_name.split("/")[-1]
     while time.time() < deadline:
         text = collect_activity_text(client, session_name)
         match = PR_URL_RE.search(text)
@@ -88,6 +89,8 @@ def poll_for_pr_url(client: JulesClient, session_name: str, cfg: Config, feature
         if state == "COMPLETED":
             break
         time.sleep(cfg.poll_seconds)
+    if not branch and cfg.github_repository and cfg.github_token:
+        branch = find_branch_by_session_id(cfg.github_repository, session_id, cfg.github_token, cfg.github_api_url)
     if branch:
         pr_url = _ensure_pr_exists(cfg, branch, feature_id)
         if pr_url:
