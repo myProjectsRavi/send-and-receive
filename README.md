@@ -9,3 +9,6 @@
 ## Comment Intake
 - `/agent1 ...` (replace backlog)
 - `/agent1-append ...` (append enhancements)
+
+## Docs
+- `docs/SETUP.md`

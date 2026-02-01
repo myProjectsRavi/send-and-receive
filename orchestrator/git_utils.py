@@ -38,6 +38,17 @@ def push_with_retry() -> None:
     return
 
 
+def commit_paths(message: str, paths: Iterable[str], push: bool = True) -> bool:
+    for path in paths:
+        run_git(["add", path])
+    if not is_dirty():
+        return False
+    run_git(["commit", "-m", message])
+    if push:
+        push_with_retry()
+    return True
+
+
 def commit_all(message: str) -> bool:
     run_git(["add", "-A"])
     if not is_dirty():

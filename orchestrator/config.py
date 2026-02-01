@@ -22,6 +22,7 @@ class Config:
     starting_branch: str
     agent1_mode: str
     run_max_minutes: int
+    status_mode: str
     dry_run: bool
 
     @classmethod
@@ -51,6 +52,7 @@ class Config:
             starting_branch=os.getenv("ORCH_STARTING_BRANCH") or "main",
             agent1_mode=(os.getenv("ORCH_AGENT1_MODE") or "replace").lower(),
             run_max_minutes=int(os.getenv("ORCH_RUN_MAX_MINUTES", "27")),
+            status_mode=(os.getenv("ORCH_STATUS_MODE") or "artifact").lower(),
             dry_run=dry_run,
         )
 

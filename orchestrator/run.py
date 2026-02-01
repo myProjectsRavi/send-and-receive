@@ -11,7 +11,7 @@ from typing import Any
 
 from .backlog import BacklogStore, extract_backlog_json
 from .config import Config
-from .git_utils import commit_all
+from .git_utils import commit_all, commit_paths
 from .github_client import create_pr, find_branch_by_session_id, find_pr_by_head, get_pr_info
 from .intake import prompt_from_event
 from .jules_client import JulesClient
@@ -222,6 +222,19 @@ def acceptance_for_stories(acceptance_items: list[dict[str, Any]], stories: list
     return [item for item in acceptance_items if item.get("story") in story_ids]
 
 
+def commit_backlog(cfg: Config, message: str) -> bool:
+    paths = ["backlog"]
+    if cfg.status_mode == "git":
+        paths.append("status")
+    return commit_paths(message, paths, push=True)
+
+
+def commit_status(cfg: Config, message: str) -> bool:
+    if cfg.status_mode != "git":
+        return False
+    return commit_paths(message, ["status"], push=True)
+
+
 def run_agent1(cfg: Config, store: BacklogStore, mode: str, run_deadline: float) -> bool:
     existing = {
         "product": store.product.get("product", {}),
@@ -350,16 +363,16 @@ def main() -> int:
                 ok = run_agent1(cfg, store, agent1_mode, run_deadline)
                 if not ok:
                     write_status(root, store, None, notes="Agent1 backlog pending")
-                    commit_all("backlog: pending agent1")
+                    commit_backlog(cfg, "backlog: pending agent1")
                     return 0
                 write_status(root, store, None, notes=f"Agent1 backlog updated ({agent1_mode})")
-                commit_all("backlog: update from agent1")
+                commit_backlog(cfg, "backlog: update from agent1")
 
         feature = store.next_review_feature() or store.next_ready_feature()
         if not feature:
             log("No ready features found")
             write_status(root, store, None, notes="No ready features")
-            commit_all("status: no ready features")
+            commit_status(cfg, "status: no ready features")
             return 0
 
         feature_id = feature.get("id")
@@ -369,7 +382,7 @@ def main() -> int:
             store.update_feature_status(feature_id, "in_progress")
             store.save_all()
             write_status(root, store, feature_id, notes="Feature in progress")
-            commit_all(f"backlog: start feature {feature_id}")
+            commit_backlog(cfg, f"backlog: start feature {feature_id}")
 
         stories = store.get_stories_for_feature(feature_id)
         acceptance = acceptance_for_stories(store.acceptance.get("items", []), stories)
@@ -385,14 +398,14 @@ def main() -> int:
             store.update_feature_fields(feature_id, status="in_progress")
             store.save_all()
             write_status(root, store, feature_id, notes="PR pending")
-            commit_all(f"backlog: pr pending {feature_id}")
+            commit_backlog(cfg, f"backlog: pr pending {feature_id}")
             return 0
 
         log(f"PR created: {pr_url}")
         store.update_feature_fields(feature_id, status="review", pr_url=pr_url)
         store.save_all()
         write_status(root, store, feature_id, notes="Feature in review")
-        commit_all(f"backlog: review feature {feature_id}")
+        commit_backlog(cfg, f"backlog: review feature {feature_id}")
 
         pr_info = get_pr_info(pr_url, cfg.require(cfg.github_token, "GITHUB_TOKEN"), cfg.github_api_url)
         review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
@@ -403,7 +416,7 @@ def main() -> int:
             store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict="PENDING")
             store.save_all()
             write_status(root, store, feature_id, notes="Review pending (no verdict)")
-            commit_all(f"backlog: review pending {feature_id}")
+            commit_backlog(cfg, f"backlog: review pending {feature_id}")
             return 0
 
         if verdict == "NEEDS_CHANGES":
@@ -416,7 +429,7 @@ def main() -> int:
             store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict=verdict)
             store.save_all()
             write_status(root, store, feature_id, notes=f"Review verdict: {verdict}")
-            commit_all(f"backlog: review verdict {feature_id}")
+            commit_backlog(cfg, f"backlog: review verdict {feature_id}")
             return 0
 
         store.update_feature_status(feature_id, "done")
@@ -424,11 +437,11 @@ def main() -> int:
         store.update_feature_fields(feature_id, review_verdict="PASS")
         store.save_all()
         write_status(root, store, feature_id, notes="Feature done")
-        commit_all(f"backlog: complete feature {feature_id}")
+        commit_backlog(cfg, f"backlog: complete feature {feature_id}")
         return 0
     except Exception as exc:
         write_error(root, exc)
-        commit_all("status: record error")
+        commit_status(cfg, "status: record error")
         raise
 
 
