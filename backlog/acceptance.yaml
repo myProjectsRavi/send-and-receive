@@ -3,47 +3,24 @@ items:
 - story: S1
   criteria:
   - Uses window.crypto.subtle
-  - 'Algorithm: AES-GCM with 256-bit key'
-  - Returns object containing { ciphertext, iv, key }
-  - Key is exportable for sharing
+  - Key length is 256 bits
+  - Returns ciphertext and IV
 - story: S2
   criteria:
-  - 'Constructs URL hash format: #iv|ciphertext|key'
-  - Uses Base64URL encoding to ensure link safety
-  - Handles messages up to URL length limits (approx 2KB safe)
+  - URL fragment contains all necessary decryption data
+  - No data sent to server (network tab check)
+  - Key is part of the hash so it is not sent to server
 - story: S3
   criteria:
-  - 'Parses #iv|ciphertext|key from window.location.hash'
-  - Decrypts successfully and renders text
-  - Calls history.replaceState to remove hash immediately
-  - Shows error if integrity check fails
+  - Message displayed correctly
+  - URL bar is reset to root path immediately
+  - Reloading the page does not show the message again
 - story: S4
   criteria:
-  - Creates RTCPeerConnection with DataChannel
-  - Generates local description (Offer)
-  - Displays Offer string in a textarea for copying
-  - Includes ICE candidates in the blob (since no trickle ICE)
+  - Generates valid SDP blob
+  - Copy to clipboard button works
 - story: S5
   criteria:
-  - Accepts SDP Offer string as input
-  - Sets Remote Description on local connection
-  - Generates Local Description (Answer)
-  - Displays Answer for copying
-- story: S6
-  criteria:
-  - Accepts SDP Answer string as input
-  - Sets Remote Description
-  - Waits for DataChannel 'open' event
-  - Transitions UI to Chat Mode upon success
-- story: S7
-  criteria:
-  - Input field sends text to DataChannel
-  - Incoming data appends to message log
-  - UI clears on page refresh (no local storage)
-  - Visual indicator for connection status
-- story: S8
-  criteria:
-  - 'Meta tag present: default-src ''self'''
-  - script-src 'self' (no unsafe-inline/eval)
-  - style-src 'self' (or 'unsafe-inline' if absolutely necessary for dynamic UI)
-  - 'img-src ''self'' data:'
+  - Chat interface becomes active
+  - Messages sent appear on peer screen
+  - No websocket/XHR traffic observed

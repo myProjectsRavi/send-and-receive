@@ -1,18 +1,15 @@
 version: 1
 items:
 - id: E1
-  title: Core Security & Cryptography
+  title: Core Cryptography & Security
   status: planned
-  description: The foundation of client-side encryption and hygiene.
+  description: Foundation security layer ensuring strong encryption and key management.
 - id: E2
-  title: Async Link Messaging
+  title: Ephemeral Asynchronous Messaging
   status: planned
-  description: Send one-off messages via generated magic links.
+  description: Send encrypted messages via one-time links that self-destruct (burn-on-read
+    context).
 - id: E3
-  title: Real-time P2P Chat
+  title: Real-Time P2P Chat
   status: planned
-  description: Live conversation via WebRTC without signaling servers.
-- id: E4
-  title: Security Hardening
-  status: planned
-  description: Measures to prevent XSS, MITM, and other client-side attacks.
+  description: Direct browser-to-browser chat without signaling servers.

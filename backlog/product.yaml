@@ -1,31 +1,22 @@
 version: 1
 product:
-  id: prod-ghostlink
+  id: prod-001
   name: GhostLink
   owner: product-owner
-  vision: A zero-infrastructure, browser-based secure messaging tool that ensures
-    total privacy by storing data nowhere but the user's device.
+  vision: A zero-infrastructure, end-to-end encrypted messaging web app providing
+    secure, ephemeral communication without backend servers or persistent storage.
   constraints:
-  - No backend servers or databases
-  - Static hosting only (Cloudflare Pages)
-  - Zero maintenance cost
-  - Data exists only in RAM or URL fragment
-  - No user accounts or login
-  - 1:1 Messaging only (Mesh/SFU logic too complex for serverless MVP)
+  - Zero Backend
+  - Static Hosting Only
+  - No Persistent Data
+  - Client-Side Only
   rules:
-  - All encryption must happen client-side via Web Crypto API
-  - Keys must never be sent over the network (except inside URL fragment hash)
-  - WebRTC signaling must be manual (Copy/Paste SDP) to avoid signaling servers
-  - 'Impossible: Push notifications (requires APNS/FCM server)'
-  - 'Impossible: Offline message queuing (requires DB)'
-  - 'Impossible: User directory (requires DB)'
-  - No external scripts or CDNs permitted (Self-contained for security)
-  - File transfers limited by client RAM (No server-side buffering)
+  - All encryption must happen client-side using Web Crypto API.
+  - No data is sent to any server; URL hash fragments are used for transport.
+  - 'Impossible features: Push notifications, offline message buffering, user lookup/directory.'
+  - Real-time chat requires manual SDP exchange (no signaling server).
   requirements:
   - AES-GCM 256-bit encryption
-  - URL-based message transport (max ~2KB payload)
-  - Ephemeral UI - clear history on load
-  - Responsive design for mobile/desktop
-  - Strict Content Security Policy (CSP) headers
-  - Sanitization of all rendered user content
+  - WebRTC Data Channels
+  - Responsive Mobile/Desktop UI
   status: active

@@ -3,32 +3,21 @@ items:
 - id: F1
   epic: E1
   title: Crypto Engine
-  status: in_progress
-  description: Wrapper for Web Crypto API to handle AES-GCM and Key management.
+  status: ready
+  description: Wrapper for Web Crypto API to handle key generation, encryption, and
+    decryption.
 - id: F2
   epic: E2
-  title: Message Composer
-  status: review
-  description: UI and logic to encrypt text and generate shareable links.
+  title: Secure Link Generation
+  status: ready
+  description: Encodes encrypted payload and IV into a URL fragment.
 - id: F3
   epic: E2
-  title: Message Reader
-  status: done
-  description: Logic to parse URL hash, decrypt content, and display it.
+  title: Message Viewer
+  status: ready
+  description: Decodes URL fragment, attempts decryption, and clears history.
 - id: F4
   epic: E3
   title: Manual Handshake
-  status: done
-  description: Interface for generating and exchanging SDP offers/answers manually.
-  pr_url: https://github.com/myProjectsRavi/send-and-receive/pull/9
-  review_verdict: PASS
-- id: F5
-  epic: E3
-  title: Live Chat Interface
-  status: planned
-  description: The UI and logic for exchanging messages over an open WebRTC DataChannel.
-- id: F6
-  epic: E4
-  title: Attack Surface Reduction
-  status: planned
-  description: Implementation of strict browser security policies.
+  status: ready
+  description: UI/UX for exchanging SDP offers and answers manually via clipboard.
