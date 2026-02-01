@@ -1,15 +1,21 @@
 version: 1
 product:
-  id: "prod-001"
-  name: "TBD"
-  owner: "product-owner"
-  vision: ""
+  id: prod-001
+  name: GhostLink
+  owner: product-owner
+  vision: A zero-infrastructure, client-side only web application for secure, ephemeral
+    messaging where data never touches a server.
   constraints:
-    - "zero infra"
-    - "zero INR"
-    - "fire and forget"
-  rules: []
-  requirements: []
-  status: "draft"
-  created_at: ""
-  updated_at: ""
+  - No backend servers or databases
+  - Static hosting only (Cloudflare Pages)
+  - Data stored in URL fragments or local storage only
+  - No user accounts or identity management
+  rules:
+  - Encryption keys must be generated client-side and never leave the device
+  - Message payloads for async sharing must fit within URL length limits
+  - Real-time chat must use manual SDP exchange (no signaling server)
+  requirements:
+  - Web Crypto API for AES-GCM and ECDH
+  - Responsive design for mobile/desktop
+  - Copy-to-clipboard functionality for links and SDP
+  status: active

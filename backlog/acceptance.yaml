@@ -1,2 +1,24 @@
 version: 1
-items: []
+items:
+- story: S1
+  criteria:
+  - Message is encrypted using AES-GCM before URL generation.
+  - 'Key is included in the URL fragment (after #) so it is not sent to the server.'
+  - Link is copied to clipboard automatically.
+  - Max message size is enforced.
+- story: S2
+  criteria:
+  - Application parses hash from URL.
+  - Decryption fails gracefully if key is missing or corrupted.
+  - Message content is displayed in a non-editable view.
+  - No network requests are made with the decrypted content.
+- story: S3
+  criteria:
+  - Clicking 'Start Chat' generates a local WebRTC Offer.
+  - Offer string is compressed/encoded for easier copying.
+  - UI displays waiting state.
+- story: S4
+  criteria:
+  - User can paste the Answer string from the peer.
+  - Connection state changes to 'Connected' upon success.
+  - Chat interface becomes active.

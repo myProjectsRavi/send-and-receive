@@ -1,3 +1,20 @@
 {
-  "items": []
+  "items": [
+    {
+      "id": "F1",
+      "status": "ready"
+    },
+    {
+      "id": "F2",
+      "status": "ready"
+    },
+    {
+      "id": "F3",
+      "status": "ready"
+    },
+    {
+      "id": "F4",
+      "status": "ready"
+    }
+  ]
 }

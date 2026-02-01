@@ -1,2 +1,32 @@
 version: 1
-items: []
+items:
+- id: S1
+  feature: F1
+  title: Encrypt message and generate link
+  status: ready
+  description: As a sender, I want to type a message and get a link containing the
+    encrypted data and key so I can share it securely.
+- id: S2
+  feature: F2
+  title: Decrypt message from link
+  status: ready
+  description: As a recipient, I want to open a GhostLink URL and see the decrypted
+    message without it ever being stored on a server.
+- id: S3
+  feature: F3
+  title: Generate Connection Offer
+  status: ready
+  description: As a chat initiator, I want to generate a WebRTC connection code (SDP)
+    to send to my peer.
+- id: S4
+  feature: F3
+  title: Establish Connection with Answer
+  status: ready
+  description: As a chat initiator, I want to paste the answer code from my peer to
+    finalize the connection.
+- id: S5
+  feature: F1
+  title: Burn on read (Simulated)
+  status: ready
+  description: As a sender, I want the link to be theoretically invalid after use
+    (by client-side logic attempting to clear it from history).

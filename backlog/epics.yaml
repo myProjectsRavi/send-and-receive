@@ -1,2 +1,15 @@
 version: 1
-items: []
+items:
+- id: E1
+  title: Async Secret Sharing
+  status: planned
+  description: Send encrypted messages via URL links that contain the ciphertext and
+    key.
+- id: E2
+  title: Real-time P2P Chat
+  status: planned
+  description: Direct browser-to-browser chat using WebRTC with manual signaling.
+- id: E3
+  title: Security Foundation
+  status: planned
+  description: Core cryptographic implementations and threat mitigation.
