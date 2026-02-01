@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink Crypto Verification</title>
+</head>
+<body>
+    <h1>GhostLink Crypto Verification</h1>
+    <button id="encrypt-btn">Encrypt "Hello World"</button>
+
+    <h2>Results:</h2>
+    <div><strong>Key:</strong> <span id="key"></span></div>
+    <div><strong>IV:</strong> <span id="iv"></span></div>
+    <div><strong>Ciphertext:</strong> <span id="ciphertext"></span></div>
+
+    <script type="module">
+        import { CryptoService } from './js/crypto-service.js';
+
+        document.getElementById('encrypt-btn').addEventListener('click', async () => {
+            try {
+                const result = await CryptoService.encryptData("Hello World");
+                document.getElementById('key').textContent = result.key;
+                document.getElementById('iv').textContent = result.iv;
+                document.getElementById('ciphertext').textContent = result.ciphertext;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('ciphertext').textContent = "Error: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
