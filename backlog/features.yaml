@@ -8,7 +8,7 @@ items:
 - id: F2
   epic: E2
   title: Message Composer
-  status: in_progress
+  status: review
   description: UI and logic to encrypt text and generate shareable links.
 - id: F3
   epic: E2
