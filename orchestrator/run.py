@@ -175,6 +175,15 @@ def poll_for_review(
     }
 
 
+def normalize_verdict(value: str) -> str:
+    verdict = value.strip().upper()
+    if verdict in {"CHANGES_REQUESTED", "REQUEST_CHANGES", "REQUESTED_CHANGES"}:
+        return "NEEDS_CHANGES"
+    if verdict in {"APPROVED", "PASS"}:
+        return "PASS"
+    return verdict
+
+
 def poll_for_session_completion(client: JulesClient, session_name: str, cfg: Config, run_deadline: float) -> str:
     deadline = time.time() + cfg.max_poll_minutes * 60
     while time.time() < deadline:
@@ -512,7 +521,7 @@ def main() -> int:
 
         pr_info = get_pr_info(pr_url, cfg.require(cfg.github_token, "GITHUB_TOKEN"), cfg.github_api_url)
         review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
-        verdict = str(review.get("verdict", "")).upper()
+        verdict = normalize_verdict(str(review.get("verdict", "")))
 
         if verdict == "PENDING":
             log("Review pending; no verdict found. Leaving feature in review state.")
@@ -526,7 +535,7 @@ def main() -> int:
             log("Reviewer requested changes")
             run_agent2_fix(cfg, pr_url, review, pr_info.get("head_ref"), run_deadline)
             review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
-            verdict = str(review.get("verdict", "")).upper()
+            verdict = normalize_verdict(str(review.get("verdict", "")))
 
         if verdict != "PASS":
             store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict=verdict)
