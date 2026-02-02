@@ -32,13 +32,16 @@ def ensure_pushable() -> bool:
 def push_with_retry() -> None:
     if not ensure_pushable():
         return
+    branch = _read_stdout(["rev-parse", "--abbrev-ref", "HEAD"]) or "main"
+    if branch == "HEAD":
+        branch = "main"
     for _ in range(2):
         proc = run_git(["push"], check=False)
         if proc.returncode == 0:
             return
         # Try to rebase once and retry.
         run_git(["fetch", "origin"], check=False)
-        run_git(["rebase", "origin/main"], check=False)
+        run_git(["rebase", f"origin/{branch}"], check=False)
     return
 
 

@@ -59,44 +59,6 @@ def find_branch_by_session_id(repo_full: str, session_id: str, token: str, api_b
         if session_id in name:
             return name
     return None
-def list_branches(repo_full: str, token: str, api_base: str, per_page: int = 100, max_pages: int = 10) -> list[str]:
-    owner, repo = parse_repo(repo_full)
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-    }
-    branches: list[str] = []
-    page = 1
-    while page <= max_pages:
-        url = f"{api_base.rstrip('/')}/repos/{owner}/{repo}/branches?per_page={per_page}&page={page}"
-        resp = requests.get(url, headers=headers, timeout=30)
-        if resp.status_code >= 400:
-            raise RuntimeError(f"GitHub API error {resp.status_code}: {resp.text}")
-        data = resp.json() or []
-        if not data:
-            break
-        for item in data:
-            name = item.get("name")
-            if name:
-                branches.append(name)
-        if len(data) < per_page:
-            break
-        page += 1
-    return branches
-
-
-def find_branch_by_session_id(repo_full: str, session_id: str, token: str, api_base: str) -> str | None:
-    if not session_id:
-        return None
-    branches = list_branches(repo_full, token, api_base)
-    # Prefer feature branches containing the session id
-    for name in branches:
-        if session_id in name and name.startswith("feature/"):
-            return name
-    for name in branches:
-        if session_id in name:
-            return name
-    return None
 
 
 def find_pr_by_head(repo_full: str, head_ref: str, token: str, api_base: str) -> dict[str, Any] | None:
@@ -197,6 +159,8 @@ def is_pr_merged(pr_url: str, token: str, api_base: str) -> bool:
 
 
 def merge_pr(pr_url: str, token: str, api_base: str, merge_method: str | None = None) -> dict[str, Any]:
+    if merge_method and merge_method not in {"merge", "squash", "rebase"}:
+        merge_method = None
     owner, repo, number = parse_pr_url(pr_url)
     url = f"{api_base.rstrip('/')}/repos/{owner}/{repo}/pulls/{number}/merge"
     headers = {
