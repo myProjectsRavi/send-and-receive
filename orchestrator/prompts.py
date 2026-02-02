@@ -26,6 +26,7 @@ Rules:
 - You may add new items to product constraints/rules/requirements only.
 
 Return ONLY the JSON payload between the markers below. Do not include any extra text.
+Do NOT modify the repository or propose code changes.
 
 BEGIN_BACKLOG_JSON
 {{
@@ -49,6 +50,7 @@ Input from product owner:
 {product_prompt}
 
 Return ONLY the JSON payload between the markers below. Do not include any extra text.
+Do NOT modify the repository or propose code changes.
 
 BEGIN_BACKLOG_JSON
 {{

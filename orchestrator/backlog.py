@@ -94,6 +94,12 @@ class BacklogStore:
                 return item
         return None
 
+    def update_product_fields(self, **fields: Any) -> None:
+        product = self.product.setdefault("product", {})
+        for key, value in fields.items():
+            if value is not None:
+                product[key] = value
+
     def get_stories_for_feature(self, feature_id: str) -> list[dict[str, Any]]:
         items = self.stories.get("items", [])
         return [item for item in items if item.get("feature") == feature_id]

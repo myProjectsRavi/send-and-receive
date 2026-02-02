@@ -329,7 +329,13 @@ def commit_status(cfg: Config, message: str) -> bool:
     return commit_paths(message, ["status"], push=True)
 
 
-def run_agent1(cfg: Config, store: BacklogStore, mode: str, run_deadline: float) -> bool:
+def run_agent1(
+    cfg: Config,
+    store: BacklogStore,
+    mode: str,
+    run_deadline: float,
+    session_name: str | None = None,
+) -> tuple[bool, str]:
     existing = {
         "product": store.product.get("product", {}),
         "epics": store.epics.get("items", []),
@@ -337,26 +343,29 @@ def run_agent1(cfg: Config, store: BacklogStore, mode: str, run_deadline: float)
         "stories": store.stories.get("items", []),
         "acceptance": store.acceptance.get("items", []),
     }
-    prompt = build_agent1_prompt(cfg.require(cfg.product_prompt, "PRODUCT_PROMPT"), mode=mode, existing=existing)
     client = JulesClient(cfg.require(cfg.key_arch, "JULES_KEY_ARCH"), cfg.api_base)
-    session = client.create_session(
-        prompt=prompt,
-        source=cfg.require(cfg.source, "JULES_SOURCE"),
-        title="Agent1 Backlog",
-        starting_branch=cfg.starting_branch,
-        automation_mode=None,
-        require_plan_approval=cfg.require_plan_approval,
-    )
-    session_name = session_name_from(session)
-    log(f"Agent1 session: {session_name}")
-    if cfg.require_plan_approval:
-        client.approve_plan(session_name)
+    if session_name:
+        log(f"Agent1 session (resume): {session_name}")
+    else:
+        prompt = build_agent1_prompt(cfg.require(cfg.product_prompt, "PRODUCT_PROMPT"), mode=mode, existing=existing)
+        session = client.create_session(
+            prompt=prompt,
+            source=cfg.require(cfg.source, "JULES_SOURCE"),
+            title="Agent1 Backlog",
+            starting_branch=cfg.starting_branch,
+            automation_mode=None,
+            require_plan_approval=cfg.require_plan_approval,
+        )
+        session_name = session_name_from(session)
+        log(f"Agent1 session: {session_name}")
+        if cfg.require_plan_approval:
+            client.approve_plan(session_name)
     payload = poll_for_backlog(client, session_name, cfg, run_deadline)
     if not payload:
-        return False
+        return False, session_name
     store.apply_agent1_payload(payload, mode=mode)
     store.save_all()
-    return True
+    return True, session_name
 
 
 def run_agent2(
@@ -396,6 +405,12 @@ def resume_agent2(
 
 def get_session_state(cfg: Config, session_name: str) -> str:
     client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
+    session = client.get_session(session_name)
+    return str(session.get("state") or session.get("status") or "UNKNOWN").upper()
+
+
+def get_session_state_with_key(cfg: Config, api_key: str, session_name: str) -> str:
+    client = JulesClient(api_key, cfg.api_base)
     session = client.get_session(session_name)
     return str(session.get("state") or session.get("status") or "UNKNOWN").upper()
 
@@ -478,16 +493,31 @@ def main() -> int:
                 if mode:
                     agent1_mode = mode
 
-        if cfg.product_prompt:
+        product_meta = store.product.get("product", {})
+        agent1_session = product_meta.get("agent1_session")
+        if cfg.product_prompt or agent1_session:
             log("Running Agent 1 (backlog)...")
             if cfg.dry_run:
                 log("Dry run: skipping Agent 1 API call")
             else:
-                ok = run_agent1(cfg, store, agent1_mode, run_deadline)
+                ok, session_name = run_agent1(
+                    cfg,
+                    store,
+                    agent1_mode,
+                    run_deadline,
+                    session_name=agent1_session if not cfg.product_prompt else None,
+                )
                 if not ok:
+                    state = None
+                    if session_name:
+                        state = get_session_state_with_key(cfg, cfg.require(cfg.key_arch, "JULES_KEY_ARCH"), session_name)
+                    store.update_product_fields(agent1_session=session_name, agent1_state=state)
+                    store.save_all()
                     write_status(root, store, None, notes="Agent1 backlog pending")
                     commit_backlog(cfg, "backlog: pending agent1")
                     return 0
+                store.update_product_fields(agent1_session=None, agent1_state="COMPLETED")
+                store.save_all()
                 write_status(root, store, None, notes=f"Agent1 backlog updated ({agent1_mode})")
                 commit_backlog(cfg, "backlog: update from agent1")
 
