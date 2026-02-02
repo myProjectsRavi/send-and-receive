@@ -23,7 +23,7 @@ jobs:
   run:
     if: ${{ github.event_name != 'issue_comment' || github.event.issue.pull_request == null }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,9 +44,9 @@ jobs:
           JULES_KEY_REVIEW: ${{ secrets.JULES_KEY_REVIEW }}
           JULES_SOURCE: ${{ secrets.JULES_SOURCE }}
           JULES_API_BASE: ${{ secrets.JULES_API_BASE }}
-          ORCH_MAX_POLL_MINUTES: 25
+          ORCH_MAX_POLL_MINUTES: 40
           ORCH_POLL_SECONDS: 12
-          ORCH_RUN_MAX_MINUTES: 27
+          ORCH_RUN_MAX_MINUTES: 40
           ORCH_MAX_ACTIVITY_PAGES: 20
           ORCH_STATUS_MODE: artifact
           ORCH_AUTO_MERGE: true
