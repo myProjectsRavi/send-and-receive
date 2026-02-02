@@ -365,6 +365,12 @@ def resume_agent2(
     return poll_for_pr_url(client, session_name, cfg, feature_id, run_deadline)
 
 
+def get_session_state(cfg: Config, session_name: str) -> str:
+    client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
+    session = client.get_session(session_name)
+    return str(session.get("state") or session.get("status") or "UNKNOWN").upper()
+
+
 def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str | None, run_deadline: float) -> None:
     prompt = build_agent2_fix_prompt(pr_url, review)
     client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
@@ -484,7 +490,15 @@ def main() -> int:
             commit_backlog(cfg, f"backlog: agent2 session {feature_id}")
         if not pr_url:
             log("PR not ready; leaving feature in progress.")
-            store.update_feature_fields(feature_id, status="in_progress", agent2_session=agent2_session)
+            agent2_state = None
+            if agent2_session:
+                agent2_state = get_session_state(cfg, agent2_session)
+            store.update_feature_fields(
+                feature_id,
+                status="in_progress",
+                agent2_session=agent2_session,
+                agent2_state=agent2_state,
+            )
             store.save_all()
             write_status(root, store, feature_id, notes="PR pending")
             commit_backlog(cfg, f"backlog: pr pending {feature_id}")
