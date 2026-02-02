@@ -19,6 +19,10 @@
 4. Download status from **Artifacts** after each run:
    - `orchestrator-status-<run_id>` contains `status/*.json`.
 
+## Automation triggers
+- Only manual triggers are enabled by default (issue comments + workflow dispatch).
+- No scheduled runs; add a cron trigger only if you want automation.
+
 ## Auto-merge (optional)
 - Enable by setting `ORCH_AUTO_MERGE=true` in the workflow env or `.env.local`.
 - Set `ORCH_MERGE_METHOD` to `squash`, `merge`, or `rebase`.

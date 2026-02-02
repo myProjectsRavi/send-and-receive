@@ -9,8 +9,6 @@ on:
         type: string
   issue_comment:
     types: [created]
-  schedule:
-    - cron: "0 * * * *"
 
 concurrency:
   group: orchestrator-single

@@ -11,5 +11,8 @@
 - `/agent1 ...` (replace backlog)
 - `/agent1-append ...` (append enhancements)
 
+## Automation
+- Only manual triggers are enabled (issue comments + workflow dispatch).
+
 ## Docs
 - `docs/SETUP.md`
