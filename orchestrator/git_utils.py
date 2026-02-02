@@ -17,6 +17,10 @@ def is_dirty() -> bool:
     return bool(status)
 
 
+def has_staged_changes() -> bool:
+    return bool(_read_stdout(["diff", "--cached", "--name-only"]))
+
+
 def ensure_pushable() -> bool:
     run_git(["fetch", "origin"], check=False)
     status = _read_stdout(["status", "-sb"])
@@ -41,7 +45,7 @@ def push_with_retry() -> None:
 def commit_paths(message: str, paths: Iterable[str], push: bool = True) -> bool:
     for path in paths:
         run_git(["add", path])
-    if not is_dirty():
+    if not has_staged_changes():
         return False
     run_git(["commit", "-m", message])
     if push:
