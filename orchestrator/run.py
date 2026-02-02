@@ -184,6 +184,26 @@ def normalize_verdict(value: str) -> str:
     return verdict
 
 
+def review_with_retry(
+    cfg: Config,
+    pr_url: str,
+    feature: dict[str, Any],
+    stories: list[dict[str, Any]],
+    acceptance: list[dict[str, Any]],
+    pr_head: str | None,
+    run_deadline: float,
+) -> tuple[dict[str, Any], str]:
+    review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_head, run_deadline)
+    verdict = normalize_verdict(str(review.get("verdict", "")))
+    retries = max(cfg.review_retry_max, 0)
+    while verdict == "PENDING" and retries > 0 and not _out_of_time(run_deadline):
+        log("Review pending; retrying Agent3 once")
+        review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_head, run_deadline)
+        verdict = normalize_verdict(str(review.get("verdict", "")))
+        retries -= 1
+    return review, verdict
+
+
 def poll_for_session_completion(client: JulesClient, session_name: str, cfg: Config, run_deadline: float) -> str:
     deadline = time.time() + cfg.max_poll_minutes * 60
     while time.time() < deadline:
@@ -550,8 +570,15 @@ def main() -> int:
         commit_backlog(cfg, f"backlog: review feature {feature_id}")
 
         pr_info = get_pr_info(pr_url, cfg.require(cfg.github_token, "GITHUB_TOKEN"), cfg.github_api_url)
-        review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
-        verdict = normalize_verdict(str(review.get("verdict", "")))
+        review, verdict = review_with_retry(
+            cfg,
+            pr_url,
+            feature,
+            stories,
+            acceptance,
+            pr_info.get("head_ref"),
+            run_deadline,
+        )
 
         if verdict == "PENDING":
             log("Review pending; no verdict found. Leaving feature in review state.")
@@ -575,8 +602,15 @@ def main() -> int:
             if fix_state != "COMPLETED":
                 write_status(root, store, feature_id, notes="Agent2 fix pending")
                 return 0
-            review = run_agent3(cfg, pr_url, feature, stories, acceptance, pr_info.get("head_ref"), run_deadline)
-            verdict = normalize_verdict(str(review.get("verdict", "")))
+            review, verdict = review_with_retry(
+                cfg,
+                pr_url,
+                feature,
+                stories,
+                acceptance,
+                pr_info.get("head_ref"),
+                run_deadline,
+            )
 
         if verdict != "PASS":
             store.update_feature_fields(feature_id, status="review", pr_url=pr_url, review_verdict=verdict)

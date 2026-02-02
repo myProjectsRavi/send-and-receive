@@ -25,6 +25,7 @@ class Config:
     status_mode: str
     auto_merge: bool
     merge_method: str
+    review_retry_max: int
     dry_run: bool
 
     @classmethod
@@ -57,6 +58,7 @@ class Config:
             status_mode=(os.getenv("ORCH_STATUS_MODE") or "artifact").lower(),
             auto_merge=(os.getenv("ORCH_AUTO_MERGE") or "false").lower() in ("1", "true", "yes"),
             merge_method=(os.getenv("ORCH_MERGE_METHOD") or "squash").lower(),
+            review_retry_max=int(os.getenv("ORCH_REVIEW_RETRY_MAX", "1")),
             dry_run=dry_run,
         )
 
