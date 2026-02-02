@@ -336,7 +336,7 @@ def run_agent2(
     stories: list[dict[str, Any]],
     acceptance: list[dict[str, Any]],
     run_deadline: float,
-) -> str | None:
+) -> tuple[str | None, str]:
     prompt = build_agent2_prompt(feature, stories, acceptance)
     client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
     session = client.create_session(
@@ -351,7 +351,18 @@ def run_agent2(
     log(f"Agent2 session: {session_name}")
     if cfg.require_plan_approval:
         client.approve_plan(session_name)
-    return poll_for_pr_url(client, session_name, cfg, feature.get("id"), run_deadline)
+    pr_url = poll_for_pr_url(client, session_name, cfg, feature.get("id"), run_deadline)
+    return pr_url, session_name
+
+
+def resume_agent2(
+    cfg: Config,
+    session_name: str,
+    feature_id: str | None,
+    run_deadline: float,
+) -> str | None:
+    client = JulesClient(cfg.require(cfg.key_dev, "JULES_KEY_DEV"), cfg.api_base)
+    return poll_for_pr_url(client, session_name, cfg, feature_id, run_deadline)
 
 
 def run_agent2_fix(cfg: Config, pr_url: str, review: dict[str, Any], branch: str | None, run_deadline: float) -> None:
@@ -442,6 +453,7 @@ def main() -> int:
 
         feature_id = feature.get("id")
         pr_url = feature.get("pr_url")
+        agent2_session = feature.get("agent2_session")
         log(f"Processing feature {feature_id}")
         if (
             feature.get("status") == "review"
@@ -463,11 +475,16 @@ def main() -> int:
             log("Dry run: skipping Agent 2/3 API calls")
             return 0
 
+        if not pr_url and agent2_session:
+            pr_url = resume_agent2(cfg, agent2_session, feature_id, run_deadline)
         if not pr_url:
-            pr_url = run_agent2(cfg, feature, stories, acceptance, run_deadline)
+            pr_url, agent2_session = run_agent2(cfg, feature, stories, acceptance, run_deadline)
+            store.update_feature_fields(feature_id, agent2_session=agent2_session)
+            store.save_all()
+            commit_backlog(cfg, f"backlog: agent2 session {feature_id}")
         if not pr_url:
             log("PR not ready; leaving feature in progress.")
-            store.update_feature_fields(feature_id, status="in_progress")
+            store.update_feature_fields(feature_id, status="in_progress", agent2_session=agent2_session)
             store.save_all()
             write_status(root, store, feature_id, notes="PR pending")
             commit_backlog(cfg, f"backlog: pr pending {feature_id}")
