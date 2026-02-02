@@ -26,6 +26,7 @@ class Config:
     auto_merge: bool
     merge_method: str
     review_retry_max: int
+    backlog_retry_max: int
     dry_run: bool
 
     @classmethod
@@ -59,6 +60,7 @@ class Config:
             auto_merge=(os.getenv("ORCH_AUTO_MERGE") or "false").lower() in ("1", "true", "yes"),
             merge_method=(os.getenv("ORCH_MERGE_METHOD") or "squash").lower(),
             review_retry_max=int(os.getenv("ORCH_REVIEW_RETRY_MAX", "1")),
+            backlog_retry_max=int(os.getenv("ORCH_BACKLOG_RETRY_MAX", "1")),
             dry_run=dry_run,
         )
 

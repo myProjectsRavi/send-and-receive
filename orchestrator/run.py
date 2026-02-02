@@ -184,6 +184,31 @@ def normalize_verdict(value: str) -> str:
     return verdict
 
 
+BACKLOG_REMINDER = """
+You must return ONLY the JSON payload between the markers below.
+Do not include any extra text.
+
+BEGIN_BACKLOG_JSON
+{
+  "product": {
+    "id": "prod-001",
+    "name": "<short product name>",
+    "owner": "product-owner",
+    "vision": "<1-3 sentences>",
+    "constraints": ["zero infra", "zero INR", "fire and forget"],
+    "rules": ["<rule 1>", "<rule 2>"],
+    "requirements": ["<req 1>", "<req 2>"],
+    "status": "active"
+  },
+  "epics": [],
+  "features": [],
+  "stories": [],
+  "acceptance": []
+}
+END_BACKLOG_JSON
+""".strip()
+
+
 def review_with_retry(
     cfg: Config,
     pr_url: str,
@@ -361,6 +386,12 @@ def run_agent1(
         if cfg.require_plan_approval:
             client.approve_plan(session_name)
     payload = poll_for_backlog(client, session_name, cfg, run_deadline)
+    retries = max(cfg.backlog_retry_max, 0)
+    while not payload and retries > 0 and not _out_of_time(run_deadline):
+        log("Backlog pending; prompting Agent1 to return JSON")
+        client.send_message(session_name, BACKLOG_REMINDER)
+        payload = poll_for_backlog(client, session_name, cfg, run_deadline)
+        retries -= 1
     if not payload:
         return False, session_name
     store.apply_agent1_payload(payload, mode=mode)
